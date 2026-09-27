@@ -6,8 +6,8 @@ vm_root_path     = "D:/automation/hyperv-k8s-vms/dev"
 hyperv_switch_name = "hyper-v-switch"
 start_vms          = true
 
-master_memory_mb = 6144
-worker_memory_mb = 6144
+master_memory_mb = 4096
+worker_memory_mb = 4096
 
 ssh_public_key_path  = "C:/Users/User/.ssh/id_ed25519.pub"
 ssh_private_key_path = "C:/Users/User/.ssh/id_ed25519"

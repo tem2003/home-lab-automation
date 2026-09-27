@@ -39,7 +39,6 @@ resource "null_resource" "hyperv_vm" {
     memory_mb            = tostring(each.value.memory_mb)
     cpu_count            = tostring(each.value.cpu_count)
     generation           = tostring(var.generation)
-    start_vm_ps          = var.start_vms ? "$true" : "$false"
     ssh_public_key_path  = var.ssh_public_key_path
     create_script_path   = "${var.scripts_dir}/create-hyperv-vm.ps1"
     destroy_script       = "${var.scripts_dir}/destroy-hyperv-vm.ps1"
@@ -60,7 +59,7 @@ resource "null_resource" "hyperv_vm" {
         -MemoryMb ${self.triggers.memory_mb} `
         -CpuCount ${self.triggers.cpu_count} `
         -Generation ${self.triggers.generation} `
-        -StartVm:${self.triggers.start_vm_ps}
+        -StartVm:${var.start_vms ? "$true" : "$false"}
     EOT
   }
 

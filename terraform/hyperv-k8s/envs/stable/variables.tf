@@ -65,7 +65,7 @@ variable "generation" {
 
 variable "start_vms" {
   type    = bool
-  default = false
+  default = true
 }
 
 variable "ssh_public_key_path" {

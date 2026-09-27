@@ -130,27 +130,32 @@ if (-not (Test-Path $inventoryPath)) {
   throw "Ansible inventory not found: $inventoryPath. Ensure terraform start_vms=true completed inventory discovery."
 }
 
-# Rewrite private key path in inventory for WSL consumers.
+# Rewrite private key for WSL: /mnt/c/... is world-writable and OpenSSH rejects it.
 $invText = Get-Content $inventoryPath -Raw
-$wslKey = ConvertTo-WslPath $SshPrivateKeyPath
-$invText = $invText -replace 'ansible_ssh_private_key_file:\s*.+', "ansible_ssh_private_key_file: $wslKey"
+$wslKeyInHome = '~/.ssh/id_ed25519_lab'
+$invText = $invText -replace 'ansible_ssh_private_key_file:\s*.+', "ansible_ssh_private_key_file: $wslKeyInHome"
 [IO.File]::WriteAllText($inventoryPath, $invText)
 
 # --- Ansible (WSL) ---
 if (-not $SkipAnsible) {
   Write-Host "Running Ansible site playbook via WSL..." -ForegroundColor Yellow
   $ansibleWsl = ConvertTo-WslPath $ansibleDir
+  $winKeyWsl = ConvertTo-WslPath $SshPrivateKeyPath
+  $invWslRel = "inventory/$TfEnv.yml"
   $bash = @"
 set -euo pipefail
+mkdir -p "`$HOME/.ssh"
+cp '$winKeyWsl' "`$HOME/.ssh/id_ed25519_lab"
+chmod 700 "`$HOME/.ssh"
+chmod 600 "`$HOME/.ssh/id_ed25519_lab"
 cd '$ansibleWsl'
 if ! command -v ansible-playbook >/dev/null 2>&1; then
   echo 'ansible-playbook not found in WSL. Install: sudo apt update && sudo apt install -y ansible'
   exit 1
 fi
-if ! command -v kubectl >/dev/null 2>&1; then
-  echo 'kubectl not found in WSL PATH (optional for Istio phase; role can install istioctl).'
-fi
-ansible-playbook -i inventory/dev.yml playbooks/site.yml
+export ANSIBLE_CONFIG='$ansibleWsl/ansible.cfg'
+export ANSIBLE_HOST_KEY_CHECKING=False
+ansible-playbook -i $invWslRel playbooks/site.yml
 "@
   & wsl.exe bash -lc $bash
   if ($LASTEXITCODE -ne 0) { throw "ansible-playbook failed with exit $LASTEXITCODE" }
