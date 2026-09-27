@@ -40,7 +40,7 @@ variable "vm_root_path" {
 
 variable "master_memory_mb" {
   type    = number
-  default = 6144
+  default = 4096
 }
 
 variable "master_cpu_count" {
@@ -50,7 +50,7 @@ variable "master_cpu_count" {
 
 variable "worker_memory_mb" {
   type    = number
-  default = 6144
+  default = 4096
 }
 
 variable "worker_cpu_count" {

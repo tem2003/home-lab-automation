@@ -4,7 +4,7 @@ golden_vhdx_path = "D:/automation/packer/ubuntu26-hyperv/output-ubuntu26-hyperv/
 vm_root_path     = "D:/automation/hyperv-k8s-vms/stable"
 
 hyperv_switch_name = "hyper-v-switch"
-start_vms          = false
+start_vms          = true
 
 master_memory_mb = 6144
 worker_memory_mb = 6144

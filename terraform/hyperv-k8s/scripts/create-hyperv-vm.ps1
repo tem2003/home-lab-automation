@@ -69,10 +69,18 @@ if (-not $existingVm) {
   Write-Host "VM '$VmName' already exists; updating CPU/memory settings."
 }
 
-Set-VM -Name $VmName -MemoryStartupBytes $memoryBytes -AutomaticStartAction Nothing -AutomaticStopAction ShutDown | Out-Null
+Set-VM -Name $VmName `
+  -MemoryStartupBytes $memoryBytes `
+  -AutomaticStartAction Nothing `
+  -AutomaticStopAction ShutDown `
+  -AutomaticCheckpointsEnabled $false |
+  Out-Null
 # Fixed RAM only — Dynamic Memory can balloon guests under host pressure and OOM cloud-init.
 Set-VMMemory -VMName $VmName -DynamicMemoryEnabled:$false -StartupBytes $memoryBytes
 Set-VMProcessor -VMName $VmName -Count $CpuCount | Out-Null
+
+# Drop any auto-created checkpoints (Windows client Hyper-V often snapshots on first start).
+Get-VMSnapshot -VMName $VmName -ErrorAction SilentlyContinue | Remove-VMSnapshot -IncludeAllChildSnapshots -ErrorAction SilentlyContinue
 
 # Gen2 defaults to Windows Secure Boot template; Ubuntu needs Microsoft UEFI CA.
 if ($Generation -eq 2) {

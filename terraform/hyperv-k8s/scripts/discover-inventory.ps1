@@ -100,7 +100,8 @@ if (-not (Test-Path $outDir)) {
 }
 
 $keyLine = if ($SshPrivateKeyPath) {
-  "  ansible_ssh_private_key_file: $($SshPrivateKeyPath -replace '\\','/')"
+  # Prefer a key inside the WSL home: OpenSSH rejects world-writable /mnt/c/... keys.
+  "    ansible_ssh_private_key_file: ~/.ssh/id_ed25519_lab"
 } else {
   ""
 }
