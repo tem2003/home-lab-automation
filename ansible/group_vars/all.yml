@@ -8,11 +8,36 @@ artifacts_dir: "{{ playbook_dir }}/../../artifacts"
 kubeconfig_dir: "{{ artifacts_dir }}/kubeconfigs"
 certs_dir: "{{ artifacts_dir }}/certs"
 
+# Unique overlays so all four clusters (dev×2 + stable×2) can run on the same LAN.
+# Inventory must set lab_env: dev|stable (written by discover-inventory.ps1).
+lab_pod_cidrs:
+  dev:
+    cluster1: "10.244.0.0/16"
+    cluster2: "10.245.0.0/16"
+  stable:
+    cluster1: "10.246.0.0/16"
+    cluster2: "10.247.0.0/16"
+
+# Use /16 (not 10.96/12) so service ranges do not overlap across clusters.
+lab_service_cidrs:
+  dev:
+    cluster1: "10.96.0.0/16"
+    cluster2: "10.97.0.0/16"
+  stable:
+    cluster1: "10.98.0.0/16"
+    cluster2: "10.99.0.0/16"
+
+lab_istio_networks:
+  dev:
+    cluster1: "network-dev-1"
+    cluster2: "network-dev-2"
+  stable:
+    cluster1: "network-stable-1"
+    cluster2: "network-stable-2"
+
 # Istio
 istio_version: "1.24.2"
 istio_mesh_id: "mesh1"
-istio_network_cluster1: "network1"
-istio_network_cluster2: "network2"
 istio_trust_domain: "cluster.local"
 
 # Flannel

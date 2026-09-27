@@ -5,7 +5,7 @@
   tasks:
     - name: Apply sample apps v1
       ansible.builtin.command: >
-        kubectl --kubeconfig {{ kubeconfig_dir }}/cluster1.conf
+        kubectl --kubeconfig {{ kubeconfig_dir }}/{{ lab_env }}-cluster1.conf
         apply -f {{ playbook_dir }}/../roles/istio_multicluster/files/sample-apps-v1.yaml
       delegate_to: localhost
       become: false
@@ -18,7 +18,7 @@
   tasks:
     - name: Apply sample apps v2
       ansible.builtin.command: >
-        kubectl --kubeconfig {{ kubeconfig_dir }}/cluster2.conf
+        kubectl --kubeconfig {{ kubeconfig_dir }}/{{ lab_env }}-cluster2.conf
         apply -f {{ playbook_dir }}/../roles/istio_multicluster/files/sample-apps-v2.yaml
       delegate_to: localhost
       become: false
@@ -39,7 +39,7 @@
   tasks:
     - name: Find sleep pod on cluster1
       ansible.builtin.command: >
-        kubectl --kubeconfig {{ kubeconfig_dir }}/cluster1.conf
+        kubectl --kubeconfig {{ kubeconfig_dir }}/{{ lab_env }}-cluster1.conf
         -n sample get pod -l app=sleep -o jsonpath={.items[0].metadata.name}
       register: sleep_pod
       delegate_to: localhost
@@ -48,7 +48,7 @@
 
     - name: Curl helloworld from cluster1 sleep (expect v1 and/or v2)
       ansible.builtin.command: >
-        kubectl --kubeconfig {{ kubeconfig_dir }}/cluster1.conf
+        kubectl --kubeconfig {{ kubeconfig_dir }}/{{ lab_env }}-cluster1.conf
         -n sample exec {{ sleep_pod.stdout }} --
         curl -sS helloworld.sample:5000/hello
       register: hello_resp

@@ -47,10 +47,17 @@ cd D:\automation
 
 ## Network plan
 
-| Cluster | Pod CIDR | Service CIDR | Istio network |
-|---------|----------|--------------|---------------|
-| cluster1 | `10.244.0.0/16` | `10.96.0.0/12` | `network1` |
-| cluster2 | `10.245.0.0/16` | `10.97.0.0/16` | `network2` |
+Node IPs stay on the home LAN (`192.168.50.0/24`). Pod/service CIDRs are unique
+per env+cluster so all four clusters can run together without overlay clashes.
+
+| Env | Cluster | Pod CIDR | Service CIDR | Istio network |
+|-----|---------|----------|--------------|---------------|
+| dev | cluster1 | `10.244.0.0/16` | `10.96.0.0/16` | `network-dev-1` |
+| dev | cluster2 | `10.245.0.0/16` | `10.97.0.0/16` | `network-dev-2` |
+| stable | cluster1 | `10.246.0.0/16` | `10.98.0.0/16` | `network-stable-1` |
+| stable | cluster2 | `10.247.0.0/16` | `10.99.0.0/16` | `network-stable-2` |
+
+Inventory sets `lab_env` (`dev` / `stable`); Ansible resolves CIDRs from `group_vars/all.yml`.
 
 East-west gateways use **NodePort** (no MetalLB). Nodes on the same Hyper-V switch must reach each other.
 
