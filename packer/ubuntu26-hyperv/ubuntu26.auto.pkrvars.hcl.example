@@ -1,0 +1,19 @@
+# 1) Build source VHD: .\scripts\prepare-source-disk.ps1
+# 2) Build NoCloud seed (same public key as the private key below):
+#    .\scripts\build-nocloud-seed.ps1 -SshPublicKey "ssh-ed25519 AAAA... yourcomment"
+# 3) Copy this to ubuntu26.auto.pkrvars.hcl and set ssh_private_key_path to your .pem
+
+cloud_image_url        = "file:///D:/automation/packer/ubuntu26-hyperv/artifacts/ubuntu-26.04-server-cloudimg-amd64.vhdx"
+cloud_image_checksum  = "none"
+nocloud_iso_relpath   = "artifacts/nocloud-seed.iso"
+ssh_private_key_path  = "C:/Users/YourUser/.ssh/id_ed25519"
+ssh_username          = "ubuntu"
+
+vm_name            = "ubuntu26-hyperv-packer"
+switch_name        = "hyper-v-switch"
+generation         = 2
+cpus               = 2
+memory             = 4096
+disk_size_mb       = 40960
+output_directory   = "output-ubuntu26-hyperv"
+artifact_suffix    = ""

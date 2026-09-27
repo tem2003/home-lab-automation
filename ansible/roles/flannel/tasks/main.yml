@@ -1,0 +1,27 @@
+---
+- name: Download Flannel manifest
+  ansible.builtin.get_url:
+    url: "{{ flannel_manifest_url }}"
+    dest: /tmp/kube-flannel.yml
+    mode: "0644"
+
+- name: Patch Flannel Network CIDR for this cluster
+  ansible.builtin.replace:
+    path: /tmp/kube-flannel.yml
+    regexp: '^\s*"Network":\s*".*"'
+    replace: '      "Network": "{{ pod_network_cidr }}"'
+
+- name: Apply Flannel
+  ansible.builtin.command: kubectl apply -f /tmp/kube-flannel.yml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: flannel_apply
+  changed_when: "'configured' in flannel_apply.stdout or 'created' in flannel_apply.stdout"
+
+- name: Wait for Flannel pods
+  ansible.builtin.command: >
+    kubectl -n kube-flannel rollout status daemonset/kube-flannel-ds --timeout=300s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false
+  failed_when: false

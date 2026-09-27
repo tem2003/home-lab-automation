@@ -1,0 +1,81 @@
+#cloud-config
+# Replaced at ISO build time: __SSH_PUBLIC_KEY__
+hostname: packer-ubuntu
+fqdn: packer-ubuntu.local
+
+users:
+  - name: ubuntu
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: [adm, sudo, systemd-journal]
+    shell: /bin/bash
+    lock_passwd: false
+    ssh_authorized_keys:
+      - __SSH_PUBLIC_KEY__
+
+ssh_pwauth: true
+chpasswd:
+  expire: false
+  users:
+    - name: ubuntu
+      password: TempDebug123!
+      type: text
+
+growpart:
+  mode: auto
+  devices: ["/"]
+  ignore_growroot_disabled: false
+
+resize_rootfs: true
+
+package_update: true
+package_upgrade: false
+
+packages:
+  - openssh-server
+  - linux-cloud-tools-common
+
+# Stock hv-kvp-daemon.service often fails BindsTo= on Hyper-V Gen2.
+# Do NOT After=network-online — hv-kvp is Before=cloud-init-local, and
+# cloud-init-network is Before=network-online, which creates an ordering cycle
+# that makes systemd drop cloud-init-local/network (status stuck at "not started").
+write_files:
+  - path: /etc/systemd/system/hv-kvp-daemon.service.d/override.conf
+    permissions: "0644"
+    content: |
+      [Unit]
+      BindsTo=
+      RequiresMountsFor=
+      ConditionVirtualization=
+      ConditionKernelCommandLine=
+      ConditionPathExists=/dev/vmbus/hv_kvp
+
+  - path: /usr/local/sbin/ensure-hv-kvp.sh
+    permissions: "0755"
+    content: |
+      #!/bin/bash
+      # Install kernel-matched Hyper-V tools and start KVP for Packer IP discovery.
+      set -uo pipefail
+      KVER="$(uname -r)"
+      export DEBIAN_FRONTEND=noninteractive
+      mkdir -p /var/lib/hyperv
+      apt-get update -y
+      apt-get install -y "linux-tools-${KVER}" "linux-cloud-tools-${KVER}" || {
+        echo "WARN: kernel-specific packages failed for ${KVER}" >&2
+      }
+      systemctl daemon-reload
+      systemctl enable hv-kvp-daemon.service 2>/dev/null || true
+      if ! systemctl restart hv-kvp-daemon.service 2>/dev/null; then
+        if command -v hv_kvp_daemon >/dev/null 2>&1; then
+          hv_kvp_daemon -n || true
+        elif [ -x "/usr/lib/linux-tools/${KVER}/hv_kvp_daemon" ]; then
+          "/usr/lib/linux-tools/${KVER}/hv_kvp_daemon" -n || true
+        fi
+      fi
+      systemctl is-active hv-kvp-daemon.service 2>/dev/null || pgrep -a hv_kvp || true
+
+runcmd:
+  - [ systemctl, enable, --now, ssh ]
+  - [ systemctl, enable, --now, systemd-timesyncd ]
+  - [ /usr/local/sbin/ensure-hv-kvp.sh ]
+
+final_message: "cloud-init finished. Clean golden baseline (SSH + hv-kvp). K8s later via Ansible."

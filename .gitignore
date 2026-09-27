@@ -1,0 +1,38 @@
+# Build / runtime artifacts
+artifacts/
+**/output-*/
+**/*.vhdx
+**/*.iso
+**/nocloud-staging/
+**/seed-staging-*/
+hyperv-k8s-vms/
+
+# Terraform local state & plugins
+*.tfstate
+*.tfstate.*
+.terraform/
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Generated Ansible inventory (recreated by Terraform)
+ansible/inventory/*.yml
+!ansible/inventory/.gitkeep
+
+# Packer local vars / seeds / cache
+packer/**/ubuntu26.auto.pkrvars.hcl
+packer/**/artifacts/
+packer/**/packer_cache/
+
+# Secrets / local machine noise
+.env
+.env.*
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+.DS_Store
+Thumbs.db
+*.log

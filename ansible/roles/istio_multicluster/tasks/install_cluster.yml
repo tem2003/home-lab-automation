@@ -1,0 +1,83 @@
+---
+- name: Ensure istio-system namespace
+  ansible.builtin.command: >
+    kubectl --kubeconfig {{ kubeconfig_local_path }} create namespace istio-system
+  register: ns_create
+  changed_when: "'created' in ns_create.stdout"
+  failed_when: false
+  delegate_to: localhost
+  become: false
+
+- name: Create cacerts secret from intermediate CA
+  ansible.builtin.command: >
+    kubectl --kubeconfig {{ kubeconfig_local_path }} create secret generic cacerts -n istio-system
+    --from-file=ca-cert.pem={{ certs_dir }}/{{ cluster_name }}/ca-cert.pem
+    --from-file=ca-key.pem={{ certs_dir }}/{{ cluster_name }}/ca-key.pem
+    --from-file=root-cert.pem={{ certs_dir }}/{{ cluster_name }}/root-cert.pem
+    --from-file=cert-chain.pem={{ certs_dir }}/{{ cluster_name }}/cert-chain.pem
+  register: cacerts
+  changed_when: "'created' in cacerts.stdout"
+  failed_when: >
+    cacerts.rc != 0 and ('AlreadyExists' not in cacerts.stderr) and ('already exists' not in cacerts.stderr)
+  delegate_to: localhost
+  become: false
+
+- name: Render IstioOperator for multi-primary
+  ansible.builtin.template:
+    src: iop-primary.yaml.j2
+    dest: "{{ artifacts_dir }}/iop-{{ cluster_name }}.yaml"
+    mode: "0644"
+  delegate_to: localhost
+  become: false
+
+- name: Install Istio control plane
+  ansible.builtin.command: >
+    istioctl install -y -f {{ artifacts_dir }}/iop-{{ cluster_name }}.yaml
+    --set values.pilot.env.EXTERNAL_ISTIOD=false
+  environment:
+    KUBECONFIG: "{{ kubeconfig_local_path }}"
+  register: istio_install
+  changed_when: true
+  delegate_to: localhost
+  become: false
+
+- name: Wait for istiod
+  ansible.builtin.command: >
+    kubectl --kubeconfig {{ kubeconfig_local_path }} -n istio-system
+    rollout status deployment/istiod --timeout=300s
+  changed_when: false
+  delegate_to: localhost
+  become: false
+
+- name: Label istio-system with network
+  ansible.builtin.command: >
+    kubectl --kubeconfig {{ kubeconfig_local_path }} label namespace istio-system
+    topology.istio.io/network={{ istio_network }} --overwrite
+  changed_when: true
+  delegate_to: localhost
+  become: false
+
+- name: Render east-west gateway IOP
+  ansible.builtin.template:
+    src: eastwest-gateway.yaml.j2
+    dest: "{{ artifacts_dir }}/eastwest-{{ cluster_name }}.yaml"
+    mode: "0644"
+  delegate_to: localhost
+  become: false
+
+- name: Install east-west gateway
+  ansible.builtin.command: >
+    istioctl install -y -f {{ artifacts_dir }}/eastwest-{{ cluster_name }}.yaml
+  environment:
+    KUBECONFIG: "{{ kubeconfig_local_path }}"
+  changed_when: true
+  delegate_to: localhost
+  become: false
+
+- name: Expose services via east-west gateway
+  ansible.builtin.command: >
+    kubectl --kubeconfig {{ kubeconfig_local_path }} apply -f {{ role_path }}/files/expose-services.yaml
+  register: expose
+  changed_when: "'created' in expose.stdout or 'configured' in expose.stdout"
+  delegate_to: localhost
+  become: false

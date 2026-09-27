@@ -1,0 +1,8 @@
+---
+cluster_name: cluster2
+cluster_group: cluster2
+pod_network_cidr: "10.245.0.0/16"
+service_cidr: "10.97.0.0/16"
+istio_cluster_name: cluster2
+istio_network: "{{ istio_network_cluster2 }}"
+kubeconfig_local_path: "{{ kubeconfig_dir }}/cluster2.conf"

@@ -1,0 +1,6 @@
+---
+- name: Site preparation for all Kubernetes nodes
+  hosts: k8s_nodes
+  gather_facts: true
+  roles:
+    - common

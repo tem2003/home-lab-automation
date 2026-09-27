@@ -1,0 +1,66 @@
+---
+# Runs against the first master of each cluster; uses local kubeconfigs + istioctl on the controller.
+# Prefer running Ansible from WSL with istioctl installed on the WSL host.
+
+- name: Ensure local artifact directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ artifacts_dir }}"
+    - "{{ certs_dir }}"
+    - "{{ kubeconfig_dir }}"
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Check for istioctl on controller
+  ansible.builtin.command: istioctl version --remote=false
+  register: istioctl_check
+  changed_when: false
+  failed_when: false
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Download istioctl if missing
+  when: istioctl_check.rc != 0
+  block:
+    - name: Fetch Istio release tarball
+      ansible.builtin.get_url:
+        url: "https://github.com/istio/istio/releases/download/{{ istio_version }}/istio-{{ istio_version }}-linux-amd64.tar.gz"
+        dest: "/tmp/istio-{{ istio_version }}-linux-amd64.tar.gz"
+        mode: "0644"
+      delegate_to: localhost
+      become: false
+      run_once: true
+
+    - name: Extract istioctl
+      ansible.builtin.unarchive:
+        src: "/tmp/istio-{{ istio_version }}-linux-amd64.tar.gz"
+        dest: /tmp
+        remote_src: true
+      delegate_to: localhost
+      become: false
+      run_once: true
+
+    - name: Install istioctl to /usr/local/bin
+      ansible.builtin.copy:
+        src: "/tmp/istio-{{ istio_version }}/bin/istioctl"
+        dest: /usr/local/bin/istioctl
+        mode: "0755"
+        remote_src: true
+      delegate_to: localhost
+      become: true
+      run_once: true
+
+- name: Generate shared root and intermediate CAs
+  ansible.builtin.script:
+    cmd: "generate-certs.sh '{{ certs_dir }}' cluster1 cluster2"
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Install Istio on this cluster
+  ansible.builtin.include_tasks: install_cluster.yml

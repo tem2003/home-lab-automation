@@ -1,0 +1,16 @@
+---
+- name: Install Flannel on cluster1
+  hosts: cluster1_masters
+  gather_facts: false
+  roles:
+    - role: flannel
+      vars:
+        cluster_group: cluster1
+
+- name: Install Flannel on cluster2
+  hosts: cluster2_masters
+  gather_facts: false
+  roles:
+    - role: flannel
+      vars:
+        cluster_group: cluster2

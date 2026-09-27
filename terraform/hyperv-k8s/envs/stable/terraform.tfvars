@@ -1,0 +1,16 @@
+env_name = "stable"
+
+golden_vhdx_path = "D:/automation/packer/ubuntu26-hyperv/output-ubuntu26-hyperv/Virtual Hard Disks/ubuntu26-hyperv-packer.vhdx"
+vm_root_path     = "D:/automation/hyperv-k8s-vms/stable"
+
+hyperv_switch_name = "hyper-v-switch"
+start_vms          = false
+
+master_memory_mb = 6144
+worker_memory_mb = 6144
+
+ssh_public_key_path  = "C:/Users/User/.ssh/id_ed25519.pub"
+ssh_private_key_path = "C:/Users/User/.ssh/id_ed25519"
+
+ansible_inventory_path = "D:/automation/ansible/inventory/stable.yml"
+inventory_wait_seconds = 360

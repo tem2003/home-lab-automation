@@ -1,0 +1,17 @@
+---
+- name: Bootstrap cluster2 control plane
+  hosts: cluster2_masters
+  gather_facts: true
+  roles:
+    - role: kubeadm_control_plane
+      vars:
+        cluster_group: cluster2
+
+- name: Join cluster2 workers
+  hosts: cluster2_workers
+  gather_facts: true
+  roles:
+    - role: kubeadm_worker
+      vars:
+        cluster_group: cluster2
+        control_plane_host: "{{ groups['cluster2_masters'][0] }}"

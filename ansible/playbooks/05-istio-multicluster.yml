@@ -1,0 +1,16 @@
+---
+- name: Install Istio multi-primary on both clusters
+  hosts: cluster1_masters:cluster2_masters
+  gather_facts: false
+  serial: 1
+  roles:
+    - istio_multicluster
+
+- name: Exchange remote secrets for endpoint discovery
+  hosts: cluster1_masters[0]
+  gather_facts: false
+  tasks:
+    - name: Apply remote secrets
+      ansible.builtin.include_role:
+        name: istio_multicluster
+        tasks_from: remote_secrets.yml

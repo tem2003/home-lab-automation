@@ -1,0 +1,64 @@
+---
+- name: Deploy helloworld v1 + sleep on cluster1
+  hosts: cluster1_masters[0]
+  gather_facts: false
+  tasks:
+    - name: Apply sample apps v1
+      ansible.builtin.command: >
+        kubectl --kubeconfig {{ kubeconfig_dir }}/cluster1.conf
+        apply -f {{ playbook_dir }}/../roles/istio_multicluster/files/sample-apps-v1.yaml
+      delegate_to: localhost
+      become: false
+      register: apply_v1
+      changed_when: "'created' in apply_v1.stdout or 'configured' in apply_v1.stdout"
+
+- name: Deploy helloworld v2 + sleep on cluster2
+  hosts: cluster2_masters[0]
+  gather_facts: false
+  tasks:
+    - name: Apply sample apps v2
+      ansible.builtin.command: >
+        kubectl --kubeconfig {{ kubeconfig_dir }}/cluster2.conf
+        apply -f {{ playbook_dir }}/../roles/istio_multicluster/files/sample-apps-v2.yaml
+      delegate_to: localhost
+      become: false
+      register: apply_v2
+      changed_when: "'created' in apply_v2.stdout or 'configured' in apply_v2.stdout"
+
+- name: Wait briefly for sidecars / endpoints
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Pause for pod readiness
+      ansible.builtin.pause:
+        seconds: 45
+
+- name: Smoke test cross-cluster helloworld from cluster1
+  hosts: cluster1_masters[0]
+  gather_facts: false
+  tasks:
+    - name: Find sleep pod on cluster1
+      ansible.builtin.command: >
+        kubectl --kubeconfig {{ kubeconfig_dir }}/cluster1.conf
+        -n sample get pod -l app=sleep -o jsonpath={.items[0].metadata.name}
+      register: sleep_pod
+      delegate_to: localhost
+      become: false
+      changed_when: false
+
+    - name: Curl helloworld from cluster1 sleep (expect v1 and/or v2)
+      ansible.builtin.command: >
+        kubectl --kubeconfig {{ kubeconfig_dir }}/cluster1.conf
+        -n sample exec {{ sleep_pod.stdout }} --
+        curl -sS helloworld.sample:5000/hello
+      register: hello_resp
+      delegate_to: localhost
+      become: false
+      changed_when: false
+      retries: 10
+      delay: 10
+      until: hello_resp.rc == 0
+
+    - name: Show helloworld response
+      ansible.builtin.debug:
+        msg: "{{ hello_resp.stdout }}"

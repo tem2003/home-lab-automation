@@ -1,0 +1,23 @@
+---
+# Shared defaults for the Hyper-V dual-cluster lab.
+k8s_version: "1.31"
+pod_subnet_bits: 24
+kubernetes_pause_image: "registry.k8s.io/pause:3.10"
+
+artifacts_dir: "{{ playbook_dir }}/../../artifacts"
+kubeconfig_dir: "{{ artifacts_dir }}/kubeconfigs"
+certs_dir: "{{ artifacts_dir }}/certs"
+
+# Istio
+istio_version: "1.24.2"
+istio_mesh_id: "mesh1"
+istio_network_cluster1: "network1"
+istio_network_cluster2: "network2"
+istio_trust_domain: "cluster.local"
+
+# Flannel
+flannel_version: "v0.26.1"
+flannel_manifest_url: "https://github.com/flannel-io/flannel/releases/download/{{ flannel_version }}/kube-flannel.yml"
+
+ansible_user: ubuntu
+ansible_python_interpreter: /usr/bin/python3

@@ -1,0 +1,18 @@
+---
+- name: Full lab bring-up (prep → kubeadm ×2 → CNI → Istio → smoke)
+  import_playbook: 01-site-prep.yml
+
+- name: Cluster1 kubeadm
+  import_playbook: 02-kubeadm-cluster1.yml
+
+- name: Cluster2 kubeadm
+  import_playbook: 03-kubeadm-cluster2.yml
+
+- name: CNI
+  import_playbook: 04-cni.yml
+
+- name: Istio multi-primary
+  import_playbook: 05-istio-multicluster.yml
+
+- name: Smoke apps
+  import_playbook: 06-smoke-apps.yml

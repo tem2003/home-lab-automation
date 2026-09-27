@@ -1,0 +1,8 @@
+output-*/
+*.log
+*.tmp
+nocloud-staging/
+artifacts/*.iso
+!artifacts/.gitkeep
+*.pkrvars.hcl
+!*.example
