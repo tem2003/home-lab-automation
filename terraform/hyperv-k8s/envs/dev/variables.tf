@@ -28,14 +28,15 @@ variable "hyperv_switch_name" {
 }
 
 variable "golden_vhdx_path" {
-  description = "Absolute path to the golden VHDX created by Packer."
+  description = "Absolute path to the Packer golden VHDX. Empty = <repo>/packer/ubuntu26-hyperv/output-ubuntu26-hyperv/.../ubuntu26-hyperv-packer.vhdx"
   type        = string
+  default     = ""
 }
 
 variable "vm_root_path" {
-  description = "Folder where this env's per-VM disks/configs are created."
+  description = "Folder for this env's per-VM disks/configs. Empty = <repo>/hyperv-k8s-vms/<env_name>"
   type        = string
-  default     = "D:/automation/hyperv-k8s-vms/dev"
+  default     = ""
 }
 
 variable "master_memory_mb" {

@@ -20,7 +20,7 @@ Each `envs/<name>/` directory is its own Terraform root with:
 ## Deploy (dev)
 
 ```powershell
-cd D:\automation\terraform\hyperv-k8s\envs\dev
+cd <repo-root>\terraform\hyperv-k8s\envs\dev
 terraform init
 terraform apply
 ```
@@ -28,7 +28,7 @@ terraform apply
 ## Deploy (stable)
 
 ```powershell
-cd D:\automation\terraform\hyperv-k8s\envs\stable
+cd <repo-root>\terraform\hyperv-k8s\envs\stable
 terraform init
 terraform apply
 ```
@@ -36,7 +36,7 @@ terraform apply
 ## Destroy
 
 ```powershell
-cd D:\automation\terraform\hyperv-k8s\envs\dev
+cd <repo-root>\terraform\hyperv-k8s\envs\dev
 terraform destroy
 ```
 
@@ -49,6 +49,7 @@ VM names: `<env>-<cluster>-master-1`, `<env>-<cluster>-worker-N`.
 
 ## Notes
 
+- Golden VHDX, VM root, inventory, and SSH key paths default to this git clone (`<repo>/packer/...`, `<repo>/hyperv-k8s-vms/<env>`, `~/.ssh/id_ed25519`). Override in `terraform.tfvars` or via `deploy-lab.ps1` `-var` only if needed.
 - Golden VHDX is never modified; each VM gets a copy plus a NoCloud seed ISO.
-- Edit `envs/<name>/terraform.tfvars` for memory, paths, SSH keys, etc.
+- Edit `envs/<name>/terraform.tfvars` for memory, switch name, etc.
 - After apply with `start_vms = true`, inventory is written under `ansible/inventory/<env>.yml`.

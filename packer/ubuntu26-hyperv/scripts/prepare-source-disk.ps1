@@ -2,7 +2,7 @@ param(
   [string]$CloudImageUrl = "https://cloud-images.ubuntu.com/releases/resolute/release/ubuntu-26.04-server-cloudimg-amd64.img",
   [string]$WorkDir = "..\artifacts",
   [string]$OutputVhdxName = "ubuntu-26.04-server-cloudimg-amd64.vhdx",
-  [string]$ConvertScratchDir = "C:\HyperVTemp",
+  [string]$ConvertScratchDir = (Join-Path $env:TEMP "HyperVTemp"),
   # Virtual capacity after convert. Cloud images are ~3.5GiB; K8s packages need headroom.
   [int]$OutputSizeGb = 40,
   [switch]$ForceDownload,
