@@ -1,6 +1,6 @@
 ---
 # Runs against the first master of each cluster; uses local kubeconfigs + istioctl on the controller.
-# Prefer running Ansible from WSL with istioctl installed on the WSL host.
+# Install pinned istioctl under $HOME/.local/bin (Linux FS, no sudo). Always invoke via istioctl_bin.
 
 - name: Ensure local artifact directories
   ansible.builtin.file:
@@ -11,12 +11,13 @@
     - "{{ artifacts_dir }}"
     - "{{ certs_dir }}"
     - "{{ kubeconfig_dir }}"
+    - "{{ lookup('env', 'HOME') }}/.local/bin"
   delegate_to: localhost
   become: false
   run_once: true
 
-- name: Check for istioctl on controller
-  ansible.builtin.command: istioctl version --remote=false
+- name: Check pinned istioctl binary
+  ansible.builtin.command: "{{ istioctl_bin }} version --remote=false"
   register: istioctl_check
   changed_when: false
   failed_when: false
@@ -24,8 +25,10 @@
   become: false
   run_once: true
 
-- name: Download istioctl if missing
-  when: istioctl_check.rc != 0
+- name: Install pinned istioctl when missing or wrong version
+  when: >
+    istioctl_check.rc != 0 or
+    (istio_version not in (istioctl_check.stdout | default('')))
   block:
     - name: Fetch Istio release tarball
       ansible.builtin.get_url:
@@ -45,14 +48,15 @@
       become: false
       run_once: true
 
-    - name: Install istioctl to /usr/local/bin
-      ansible.builtin.copy:
-        src: "/tmp/istio-{{ istio_version }}/bin/istioctl"
-        dest: /usr/local/bin/istioctl
-        mode: "0755"
-        remote_src: true
+    - name: Install istioctl to {{ istioctl_bin }}
+      ansible.builtin.shell: |
+        set -euo pipefail
+        cp -f "/tmp/istio-{{ istio_version }}/bin/istioctl" "{{ istioctl_bin }}"
+        chmod 755 "{{ istioctl_bin }}"
+      args:
+        executable: /bin/bash
       delegate_to: localhost
-      become: true
+      become: false
       run_once: true
 
 - name: Generate shared root and intermediate CAs

@@ -5,10 +5,11 @@ metadata:
   namespace: istio-system
 spec:
   profile: default
+  meshConfig:
+    trustDomain: {{ istio_trust_domain }}
   values:
     global:
       meshID: {{ istio_mesh_id }}
       multiCluster:
         clusterName: {{ istio_cluster_name }}
       network: {{ istio_network }}
-      trustDomain: {{ istio_trust_domain }}
