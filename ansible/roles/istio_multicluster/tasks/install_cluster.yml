@@ -1,7 +1,7 @@
 ---
 - name: Ensure istio-system namespace
   ansible.builtin.command: >
-    kubectl --kubeconfig {{ kubeconfig_local_path }} create namespace istio-system
+    {{ kubectl_bin }} --kubeconfig {{ kubeconfig_local_path }} create namespace istio-system
   register: ns_create
   changed_when: "'created' in ns_create.stdout"
   failed_when: false
@@ -10,7 +10,7 @@
 
 - name: Create cacerts secret from intermediate CA
   ansible.builtin.command: >
-    kubectl --kubeconfig {{ kubeconfig_local_path }} create secret generic cacerts -n istio-system
+    {{ kubectl_bin }} --kubeconfig {{ kubeconfig_local_path }} create secret generic cacerts -n istio-system
     --from-file=ca-cert.pem={{ certs_dir }}/{{ cluster_name }}/ca-cert.pem
     --from-file=ca-key.pem={{ certs_dir }}/{{ cluster_name }}/ca-key.pem
     --from-file=root-cert.pem={{ certs_dir }}/{{ cluster_name }}/root-cert.pem
@@ -43,7 +43,7 @@
 
 - name: Wait for istiod
   ansible.builtin.command: >
-    kubectl --kubeconfig {{ kubeconfig_local_path }} -n istio-system
+    {{ kubectl_bin }} --kubeconfig {{ kubeconfig_local_path }} -n istio-system
     rollout status deployment/istiod --timeout=300s
   changed_when: false
   delegate_to: localhost
@@ -51,7 +51,7 @@
 
 - name: Label istio-system with network
   ansible.builtin.command: >
-    kubectl --kubeconfig {{ kubeconfig_local_path }} label namespace istio-system
+    {{ kubectl_bin }} --kubeconfig {{ kubeconfig_local_path }} label namespace istio-system
     topology.istio.io/network={{ istio_network }} --overwrite
   changed_when: true
   delegate_to: localhost
@@ -76,7 +76,7 @@
 
 - name: Expose services via east-west gateway
   ansible.builtin.command: >
-    kubectl --kubeconfig {{ kubeconfig_local_path }} apply -f {{ role_path }}/files/expose-services.yaml
+    {{ kubectl_bin }} --kubeconfig {{ kubeconfig_local_path }} apply -f {{ role_path }}/files/expose-services.yaml
   register: expose
   changed_when: "'created' in expose.stdout or 'configured' in expose.stdout"
   delegate_to: localhost

@@ -151,23 +151,33 @@ if (-not $SkipAnsible) {
   $ansibleWsl = ConvertTo-WslPath $ansibleDir
   $winKeyWsl = ConvertTo-WslPath $SshPrivateKeyPath
   $invWslRel = "inventory/$TfEnv.yml"
-  $bash = @"
-set -euo pipefail
-mkdir -p "`$HOME/.ssh"
-cp '$winKeyWsl' "`$HOME/.ssh/id_ed25519_lab"
-chmod 700 "`$HOME/.ssh"
-chmod 600 "`$HOME/.ssh/id_ed25519_lab"
-cd '$ansibleWsl'
-if ! command -v ansible-playbook >/dev/null 2>&1; then
-  echo 'ansible-playbook not found in WSL. Install: sudo apt update && sudo apt install -y ansible'
-  exit 1
-fi
-export ANSIBLE_CONFIG='$ansibleWsl/ansible.cfg'
-export ANSIBLE_HOST_KEY_CHECKING=False
-ansible-playbook -i $invWslRel playbooks/site.yml
-"@
-  & wsl.exe bash -lc $bash
-  if ($LASTEXITCODE -ne 0) { throw "ansible-playbook failed with exit $LASTEXITCODE" }
+  # Write a UTF-8 (no BOM) LF script. Piping from PowerShell can inject a BOM or UTF-16
+  # and break bash ("﻿set: command not found") / leave cwd wrong so playbooks are missing.
+  $bash = @(
+    'set -euo pipefail'
+    'mkdir -p "$HOME/.ssh"'
+    "cp '$winKeyWsl' `"`$HOME/.ssh/id_ed25519_lab`""
+    'chmod 700 "$HOME/.ssh"'
+    'chmod 600 "$HOME/.ssh/id_ed25519_lab"'
+    "cd '$ansibleWsl'"
+    'if ! command -v ansible-playbook >/dev/null 2>&1; then'
+    '  echo "ansible-playbook not found in WSL. Install: sudo apt update && sudo apt install -y ansible"'
+    '  exit 1'
+    'fi'
+    "export ANSIBLE_CONFIG='$ansibleWsl/ansible.cfg'"
+    'export ANSIBLE_HOST_KEY_CHECKING=False'
+    "ansible-playbook -i $invWslRel playbooks/site.yml"
+  ) -join "`n"
+  $bashFile = Join-Path $env:TEMP "deploy-lab-ansible-$TfEnv.sh"
+  $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+  [System.IO.File]::WriteAllText($bashFile, $bash + "`n", $utf8NoBom)
+  $bashWsl = ConvertTo-WslPath $bashFile
+  try {
+    & wsl.exe bash $bashWsl
+    if ($LASTEXITCODE -ne 0) { throw "ansible-playbook failed with exit $LASTEXITCODE" }
+  } finally {
+    Remove-Item -LiteralPath $bashFile -Force -ErrorAction SilentlyContinue
+  }
 }
 
 Write-Host ""

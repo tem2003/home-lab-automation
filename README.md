@@ -79,9 +79,7 @@ ansible-playbook --version
 genisoimage --version || mkisofs -version
 ```
 
-**istioctl:** you do **not** need to install it manually. The Ansible Istio role downloads the pinned version (`1.29.2`) into `~/.local/bin/istioctl` on first run. Optional manual install is fine if you want the CLI for debugging.
-
-**kubectl (optional on Windows or WSL):** handy for day-2 ops; not required for `deploy-lab.ps1`.
+**istioctl / kubectl (WSL controller):** you do **not** need to install them manually for deploy. The Ansible Istio role downloads `istioctl` (`1.29.2`) and a matching `kubectl` into `~/.local/bin/` on first run. Optional extras on Windows are fine for day-2 ops.
 
 ### 4. Install Packer and Terraform (Windows)
 
@@ -147,7 +145,7 @@ Once the above is installed, the script can:
 - Build / reuse the Packer golden VHDX  
 - `terraform apply` for the chosen env  
 - Rewrite inventory + copy the SSH key into WSL  
-- Run `ansible-playbook playbooks/site.yml` (which installs **istioctl** if missing)
+- Run `ansible-playbook playbooks/site.yml` (which installs **istioctl** / **kubectl** on the WSL controller if missing)
 
 It does **not** install Hyper-V, WSL, Ubuntu, Ansible, Packer, Terraform, or **qemu-img** for you.
 
