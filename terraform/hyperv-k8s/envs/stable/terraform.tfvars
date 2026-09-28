@@ -10,7 +10,7 @@ env_name = "stable"
 hyperv_switch_name = "hyper-v-switch"
 start_vms          = true
 
-master_memory_mb = 6144
-worker_memory_mb = 6144
+master_memory_mb = 4096
+worker_memory_mb = 4096
 
 inventory_wait_seconds = 360
