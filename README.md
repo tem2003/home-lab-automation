@@ -95,9 +95,24 @@ packer version
 terraform version
 ```
 
-Also needed for Packer’s source disk script: **qemu-img** on PATH (e.g. from [QEMU for Windows](https://qemu.weilnetz.de/w64/) or MSYS2).
+### 5. Install qemu-img (Windows)
 
-### 5. SSH key pair
+Packer’s `prepare-source-disk.ps1` converts the Ubuntu cloud image (QCOW2) to a fixed VHDX and **requires `qemu-img` on PATH**. Without it, Packer fails with `qemu-img not found`.
+
+1. Download the latest **64-bit** QEMU installer from [qemu.weilnetz.de/w64](https://qemu.weilnetz.de/w64/) (e.g. `qemu-w64-setup-….exe`).
+2. Run the installer (default install path is usually `C:\Program Files\qemu`).
+3. Add that folder to your user or system **PATH**.
+4. Open a **new** PowerShell and verify:
+
+```powershell
+qemu-img --version
+```
+
+Alternative: install via [MSYS2](https://www.msys2.org/) (`pacman -S mingw-w64-x86_64-qemu`) and put the MSYS2 `mingw64\bin` directory on PATH — as long as `Get-Command qemu-img` succeeds in PowerShell.
+
+You can skip this step only if you reuse an existing golden VHDX and run deploy with `-SkipPacker`.
+
+### 6. SSH key pair
 
 Generate once (Windows OpenSSH):
 
@@ -124,7 +139,7 @@ Defaults used by this repo:
 
 `deploy-lab.ps1` copies the Windows private key into WSL as `~/.ssh/id_ed25519_lab` (mode `600`) for Ansible. You do not need to do that by hand when using the script.
 
-### 6. What `deploy-lab.ps1` already handles
+### 7. What `deploy-lab.ps1` already handles
 
 Once the above is installed, the script can:
 
@@ -133,7 +148,7 @@ Once the above is installed, the script can:
 - Rewrite inventory + copy the SSH key into WSL  
 - Run `ansible-playbook playbooks/site.yml` (which installs **istioctl** if missing)
 
-It does **not** install Hyper-V, WSL, Ubuntu, Ansible, Packer, or Terraform for you.
+It does **not** install Hyper-V, WSL, Ubuntu, Ansible, Packer, Terraform, or **qemu-img** for you.
 
 ## Quick start
 
