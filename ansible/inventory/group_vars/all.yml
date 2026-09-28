@@ -1,5 +1,7 @@
 ---
 # Shared defaults for the Hyper-V dual-cluster lab.
+# Apt channel (pkgs.k8s.io/.../v1.31/...). kubeadm config omits kubernetesVersion
+# so init uses the installed package (e.g. v1.31.14), which must be a full semver.
 k8s_version: "1.31"
 pod_subnet_bits: 24
 kubernetes_pause_image: "registry.k8s.io/pause:3.10"
@@ -35,8 +37,10 @@ lab_istio_networks:
     cluster1: "network-stable-1"
     cluster2: "network-stable-2"
 
-# Istio
-istio_version: "1.24.2"
+# Istio — 1.29.x officially supports Kubernetes 1.31.
+# Keep binary on the Linux filesystem (not /mnt/d) — DrvFs breaks ansible.builtin.copy atomic_move.
+istio_version: "1.29.2"
+istioctl_bin: "{{ lookup('env', 'HOME') }}/.local/bin/istioctl"
 istio_mesh_id: "mesh1"
 istio_trust_domain: "cluster.local"
 

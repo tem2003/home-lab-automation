@@ -57,6 +57,13 @@
       - curl
       - gnupg
       - lsb-release
+      # kubeadm preflight / networking helpers
+      - conntrack
+      - ebtables
+      - ipset
+      - iptables
+      - socat
+      - ethtool
     state: present
     update_cache: true
 

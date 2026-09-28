@@ -32,7 +32,7 @@
 
 - name: Install Istio control plane
   ansible.builtin.command: >
-    istioctl install -y -f {{ artifacts_dir }}/iop-{{ cluster_name }}.yaml
+    {{ istioctl_bin }} install -y -f {{ artifacts_dir }}/iop-{{ cluster_name }}.yaml
     --set values.pilot.env.EXTERNAL_ISTIOD=false
   environment:
     KUBECONFIG: "{{ kubeconfig_local_path }}"
@@ -67,7 +67,7 @@
 
 - name: Install east-west gateway
   ansible.builtin.command: >
-    istioctl install -y -f {{ artifacts_dir }}/eastwest-{{ cluster_name }}.yaml
+    {{ istioctl_bin }} install -y -f {{ artifacts_dir }}/eastwest-{{ cluster_name }}.yaml
   environment:
     KUBECONFIG: "{{ kubeconfig_local_path }}"
   changed_when: true
