@@ -53,12 +53,14 @@ Keep the **private** key path (e.g. `C:\Users\YourName\.ssh\id_ed25519`) in `ssh
 
    This writes `artifacts/nocloud-seed.iso` (see `nocloud_iso_relpath`).
 
-3. **Vars** — copy the example and set paths, especially `cloud_image_url`, `ssh_private_key_path`:
+3. **Vars** — generate machine-local Packer vars (or let `deploy-lab.ps1` do this):
 
    ```powershell
-   Copy-Item .\ubuntu26.auto.pkrvars.hcl.example .\ubuntu26.auto.pkrvars.hcl
-   notepad .\ubuntu26.auto.pkrvars.hcl
+   .\scripts\write-packer-vars.ps1
+   # optional: -SshPrivateKeyPath "C:\Users\<YOU>\.ssh\id_ed25519"
    ```
+
+   This writes gitignored `ubuntu26.auto.pkrvars.hcl` with `ssh_private_key_path` and a `file:///` URL for the prepared VHDX. The `.example` file remains only as a reference.
 
 4. **Build**:
 
@@ -86,6 +88,7 @@ Kubernetes (`containerd`, `kubeadm`/`kubelet`/`kubectl`) is installed later by A
 - `nocloud/user-data` — template with `__SSH_PUBLIC_KEY__` (replaced by the seed script).
 - `scripts/prepare-source-disk.ps1` — QCOW2 → dynamic VHDX (resized).
 - `scripts/build-nocloud-seed.ps1` — `user-data` + `meta-data` → `cidata` ISO.
+- `scripts/write-packer-vars.ps1` — generate `ubuntu26.auto.pkrvars.hcl` for this host.
 - `scripts/finalize-template.sh` — generalize for cloning.
 - `scripts/install-k8s-prereqs.sh` — optional/legacy; **not** used by Packer (Ansible installs K8s later).
 - `artifacts/` — generated VHDX and `nocloud-seed.iso` (ISO gitignored; `.gitkeep` kept).

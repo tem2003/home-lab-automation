@@ -135,14 +135,14 @@ Defaults used by this repo:
 | [`terraform/hyperv-k8s/envs/dev/terraform.tfvars`](terraform/hyperv-k8s/envs/dev/terraform.tfvars) | `ssh_public_key_path`, `ssh_private_key_path` |
 | [`terraform/hyperv-k8s/envs/stable/terraform.tfvars`](terraform/hyperv-k8s/envs/stable/terraform.tfvars) | same |
 | [`scripts/deploy-lab.ps1`](scripts/deploy-lab.ps1) | parameters `-SshPublicKeyPath` / `-SshPrivateKeyPath` (or edit defaults) |
-| Packer vars | `ssh_private_key_path` in `packer/ubuntu26-hyperv/ubuntu26.auto.pkrvars.hcl` (copy from `.example`) |
 
-`deploy-lab.ps1` copies the Windows private key into WSL as `~/.ssh/id_ed25519_lab` (mode `600`) for Ansible. You do not need to do that by hand when using the script.
+`deploy-lab.ps1` generates `packer/ubuntu26-hyperv/ubuntu26.auto.pkrvars.hcl` via `write-packer-vars.ps1` (SSH key + local VHDX paths) and copies the Windows private key into WSL as `~/.ssh/id_ed25519_lab` (mode `600`) for Ansible. You do not need to hand-copy the Packer `.example` vars file when using the script.
 
 ### 7. What `deploy-lab.ps1` already handles
 
 Once the above is installed, the script can:
 
+- Write Packer auto vars for this machine (`ubuntu26.auto.pkrvars.hcl`)  
 - Build / reuse the Packer golden VHDX  
 - `terraform apply` for the chosen env  
 - Rewrite inventory + copy the SSH key into WSL  
