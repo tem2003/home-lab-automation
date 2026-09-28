@@ -77,14 +77,20 @@ Fix (elevated PowerShell), then re-run deploy-lab.ps1:
     Write-Host "Golden VHDX exists, skipping Packer: $goldenVhdx" -ForegroundColor Green
   } else {
     Write-Host "Building Packer golden image..." -ForegroundColor Yellow
+    if (-not (Test-Path $SshPublicKeyPath)) {
+      throw "SSH public key not found: $SshPublicKeyPath"
+    }
+    if (-not (Test-Path $SshPrivateKeyPath)) {
+      throw "SSH private key not found: $SshPrivateKeyPath"
+    }
     Push-Location $packerDir
     try {
+      & .\scripts\write-packer-vars.ps1 -SshPrivateKeyPath $SshPrivateKeyPath
       if (-not (Test-Path (Join-Path $packerDir "artifacts\nocloud-seed.iso"))) {
-        if (-not (Test-Path $SshPublicKeyPath)) {
-          throw "SSH public key not found: $SshPublicKeyPath"
-        }
         & .\scripts\prepare-source-disk.ps1
         & .\scripts\build-nocloud-seed.ps1 -SshPublicKey (Get-Content $SshPublicKeyPath -Raw).Trim()
+      } elseif (-not (Test-Path (Join-Path $packerDir "artifacts\ubuntu-26.04-server-cloudimg-amd64.vhdx"))) {
+        & .\scripts\prepare-source-disk.ps1
       }
       packer init .
       if ($PackerForce) {

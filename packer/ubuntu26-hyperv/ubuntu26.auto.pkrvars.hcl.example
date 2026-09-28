@@ -1,7 +1,9 @@
 # 1) Build source VHD: .\scripts\prepare-source-disk.ps1
 # 2) Build NoCloud seed (same public key as the private key below):
 #    .\scripts\build-nocloud-seed.ps1 -SshPublicKey "ssh-ed25519 AAAA... yourcomment"
-# 3) Copy this to ubuntu26.auto.pkrvars.hcl and set ssh_private_key_path to your .pem
+# 3) Prefer auto-generate instead of copying this file:
+#    .\scripts\write-packer-vars.ps1
+#    (or run ..\..\scripts\deploy-lab.ps1 which calls write-packer-vars.ps1)
 
 cloud_image_url        = "file:///D:/automation/packer/ubuntu26-hyperv/artifacts/ubuntu-26.04-server-cloudimg-amd64.vhdx"
 cloud_image_checksum  = "none"
