@@ -151,22 +151,24 @@ if (-not $SkipAnsible) {
   $ansibleWsl = ConvertTo-WslPath $ansibleDir
   $winKeyWsl = ConvertTo-WslPath $SshPrivateKeyPath
   $invWslRel = "inventory/$TfEnv.yml"
-  $bash = @"
-set -euo pipefail
-mkdir -p "`$HOME/.ssh"
-cp '$winKeyWsl' "`$HOME/.ssh/id_ed25519_lab"
-chmod 700 "`$HOME/.ssh"
-chmod 600 "`$HOME/.ssh/id_ed25519_lab"
-cd '$ansibleWsl'
-if ! command -v ansible-playbook >/dev/null 2>&1; then
-  echo 'ansible-playbook not found in WSL. Install: sudo apt update && sudo apt install -y ansible'
-  exit 1
-fi
-export ANSIBLE_CONFIG='$ansibleWsl/ansible.cfg'
-export ANSIBLE_HOST_KEY_CHECKING=False
-ansible-playbook -i $invWslRel playbooks/site.yml
-"@
-  & wsl.exe bash -lc $bash
+  # Use LF only — CRLF makes bash treat "pipefail\r" as an invalid set -o name.
+  # Pipe to bash -s so the script is not mangled by bash -lc argument splitting.
+  $bash = @(
+    'set -euo pipefail'
+    'mkdir -p "$HOME/.ssh"'
+    "cp '$winKeyWsl' `"`$HOME/.ssh/id_ed25519_lab`""
+    'chmod 700 "$HOME/.ssh"'
+    'chmod 600 "$HOME/.ssh/id_ed25519_lab"'
+    "cd '$ansibleWsl'"
+    'if ! command -v ansible-playbook >/dev/null 2>&1; then'
+    '  echo "ansible-playbook not found in WSL. Install: sudo apt update && sudo apt install -y ansible"'
+    '  exit 1'
+    'fi'
+    "export ANSIBLE_CONFIG='$ansibleWsl/ansible.cfg'"
+    'export ANSIBLE_HOST_KEY_CHECKING=False'
+    "ansible-playbook -i $invWslRel playbooks/site.yml"
+  ) -join "`n"
+  $bash | & wsl.exe bash -s
   if ($LASTEXITCODE -ne 0) { throw "ansible-playbook failed with exit $LASTEXITCODE" }
 }
 
