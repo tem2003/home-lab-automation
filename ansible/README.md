@@ -27,8 +27,8 @@ OpenSSH rejects keys under `/mnt/c/...` because they look world-writable.
 ## Ping / site playbook
 
 ```bash
-cd /mnt/d/automation/ansible
-export ANSIBLE_CONFIG=/mnt/d/automation/ansible/ansible.cfg
+cd /mnt/<drive>/<path-to-repo>/ansible   # e.g. /mnt/d/home-lab-automation/ansible
+export ANSIBLE_CONFIG="$PWD/ansible.cfg"
 export ANSIBLE_HOST_KEY_CHECKING=False
 
 ansible -i inventory/dev.yml all -m ping

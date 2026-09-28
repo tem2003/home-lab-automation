@@ -5,7 +5,7 @@ Run these in order from PowerShell.
 ## 1) Go to project folder
 
 ```powershell
-cd D:\automation\packer\ubuntu26-hyperv
+cd <repo-root>\packer\ubuntu26-hyperv
 ```
 
 ## 2) Create SSH key pair (one-time)
@@ -46,50 +46,39 @@ Get-Item .\artifacts\ubuntu-26.04-server-cloudimg-amd64.vhdx, .\artifacts\noclou
 
 `nocloud-seed.iso` must be greater than `0` bytes.
 
-## 8) Create vars file from example (if not already)
+## 8) Generate Packer vars for this clone
 
 ```powershell
-Copy-Item .\ubuntu26.auto.pkrvars.hcl.example .\ubuntu26.auto.pkrvars.hcl -Force
+.\scripts\write-packer-vars.ps1
 ```
 
-## 9) Edit vars file (must-check values)
+This writes gitignored `ubuntu26.auto.pkrvars.hcl` with absolute paths under this repo and your `%USERPROFILE%\.ssh` key.
 
-```powershell
-notepad .\ubuntu26.auto.pkrvars.hcl
-```
-
-Ensure these are correct:
-
-- `cloud_image_url = "file:///D:/automation/packer/ubuntu26-hyperv/artifacts/ubuntu-26.04-server-cloudimg-amd64.vhdx"`
-- `nocloud_iso_relpath = "artifacts/nocloud-seed.iso"`
-- `ssh_private_key_path = "C:/Users/<YOU>/.ssh/id_ed25519"`
-- `switch_name = "hyper-v-switch"`
-
-## 10) Confirm Hyper-V switch exists
+## 9) Confirm Hyper-V switch exists
 
 ```powershell
 Get-VMSwitch -Name "hyper-v-switch"
 ```
 
-## 11) Initialize Packer plugins
+## 10) Initialize Packer plugins
 
 ```powershell
 packer init .
 ```
 
-## 12) Validate config
+## 11) Validate config
 
 ```powershell
 packer validate .
 ```
 
-## 13) Build image
+## 12) Build image
 
 ```powershell
 packer build -force .
 ```
 
-## 14) Verify output artifacts
+## 13) Verify output artifacts
 
 ```powershell
 Get-ChildItem .\output-ubuntu26-hyperv -Recurse

@@ -33,7 +33,7 @@ Get-VMHost
 Create (or reuse) an **External** virtual switch named `hyper-v-switch` bound to a working NIC. If Packer later fails with “No ip address”, fix with:
 
 ```powershell
-cd D:\automation
+cd <repo-root>
 .\scripts\fix-hyperv-switch.ps1 -NetAdapterName "Ethernet 4"   # use your real adapter name
 ```
 
@@ -130,11 +130,12 @@ Defaults used by this repo:
 
 **Where to update if your paths differ:**
 
-| File | Variables |
-|------|-----------|
-| [`terraform/hyperv-k8s/envs/dev/terraform.tfvars`](terraform/hyperv-k8s/envs/dev/terraform.tfvars) | `ssh_public_key_path`, `ssh_private_key_path` |
-| [`terraform/hyperv-k8s/envs/stable/terraform.tfvars`](terraform/hyperv-k8s/envs/stable/terraform.tfvars) | same |
-| [`scripts/deploy-lab.ps1`](scripts/deploy-lab.ps1) | parameters `-SshPublicKeyPath` / `-SshPrivateKeyPath` (or edit defaults) |
+Paths for the golden VHDX, VM disks, Ansible inventory, and default SSH keys are resolved from the **git repo root** and `~/.ssh` automatically. Override only if needed:
+
+| Mechanism | Variables |
+|-----------|-----------|
+| [`scripts/deploy-lab.ps1`](scripts/deploy-lab.ps1) | `-SshPublicKeyPath` / `-SshPrivateKeyPath` (also passes golden/VM/inventory paths for this clone) |
+| `envs/*/terraform.tfvars` | optional overrides: `golden_vhdx_path`, `vm_root_path`, `ssh_*`, `ansible_inventory_path` |
 
 `deploy-lab.ps1` generates `packer/ubuntu26-hyperv/ubuntu26.auto.pkrvars.hcl` via `write-packer-vars.ps1` (SSH key + local VHDX paths) and copies the Windows private key into WSL as `~/.ssh/id_ed25519_lab` (mode `600`) for Ansible. You do not need to hand-copy the Packer `.example` vars file when using the script.
 
@@ -153,14 +154,14 @@ It does **not** install Hyper-V, WSL, Ubuntu, Ansible, Packer, Terraform, or **q
 ## Quick start
 
 ```powershell
-cd D:\automation
+cd <repo-root>   # wherever you cloned this repository
 .\scripts\deploy-lab.ps1
 ```
 
-Or Terraform only (dev env):
+Or Terraform only (dev env — paths resolve from the repo root):
 
 ```powershell
-cd D:\automation\terraform\hyperv-k8s\envs\dev
+cd <repo-root>\terraform\hyperv-k8s\envs\dev
 terraform init
 terraform apply
 ```

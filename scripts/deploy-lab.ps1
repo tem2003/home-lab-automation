@@ -118,8 +118,11 @@ if (-not $SkipTerraform) {
   Push-Location $tfDir
   try {
     terraform init -input=false
+    $vmRootPath = Join-Path $root "hyperv-k8s-vms\$TfEnv"
     $tfArgs = @(
       "apply", "-auto-approve", "-input=false",
+      "-var=golden_vhdx_path=$($goldenVhdx -replace '\\','/')",
+      "-var=vm_root_path=$($vmRootPath -replace '\\','/')",
       "-var=ssh_public_key_path=$($SshPublicKeyPath -replace '\\','/')",
       "-var=ssh_private_key_path=$($SshPrivateKeyPath -replace '\\','/')",
       "-var=start_vms=true",

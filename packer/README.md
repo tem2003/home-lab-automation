@@ -65,7 +65,7 @@ The ISO variant (`ubuntu26-hyperv-iso`) skips the cloud-image + seed steps: Pack
 Initialize plugins once per project:
 
 ```powershell
-cd D:\automation\packer\ubuntu26-hyperv
+cd <repo-root>\packer\ubuntu26-hyperv
 packer init .
 ```
 
@@ -176,13 +176,11 @@ packer/
 
 ## Downstream: Terraform
 
-After a successful build, point Terraform at the golden VHDX:
+After a successful build, Terraform defaults to the golden VHDX under this repo:
 
-```hcl
-golden_vhdx_path = "D:/automation/packer/ubuntu26-hyperv/output-ubuntu26-hyperv/Virtual Hard Disks/ubuntu26-hyperv-packer.vhdx"
-```
+`<repo>/packer/ubuntu26-hyperv/output-ubuntu26-hyperv/Virtual Hard Disks/ubuntu26-hyperv-packer.vhdx`
 
-Terraform copies the golden disk per VM and never writes back to it. See [`terraform/hyperv-k8s`](../terraform/hyperv-k8s/README.md).
+Override with `golden_vhdx_path` only if the image lives elsewhere. Terraform copies the golden disk per VM and never writes back to it. See [`terraform/hyperv-k8s`](../terraform/hyperv-k8s/README.md).
 
 For per-node cloud-init (join tokens, hostnames, etc.), plan a NoCloud datasource or provider `user_data` in Terraform — the generalized template is ready for a **second** cloud-init run on each clone.
 

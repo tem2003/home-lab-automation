@@ -13,7 +13,7 @@ Packer golden VHDX (containerd + kubeadm pkgs)
 One-shot from an elevated PowerShell on the Hyper-V host:
 
 ```powershell
-cd D:\automation
+cd <repo-root>
 .\scripts\deploy-lab.ps1
 ```
 
@@ -40,7 +40,7 @@ Firewall: allow Packer HTTP ports if rebuilding via ISO flows; cloud-image Packe
 If build fails with `Error getting host adapter ip address: No ip address`, the switch’s host vNIC is down or APIPA-only. Rebind to your LAN NIC (Admin PowerShell):
 
 ```powershell
-cd D:\automation
+cd <repo-root>
 .\scripts\fix-hyperv-switch.ps1 -NetAdapterName "Ethernet 4"
 .\scripts\deploy-lab.ps1
 ```
@@ -66,8 +66,9 @@ East-west gateways use **NodePort** (no MetalLB). Nodes on the same Hyper-V swit
 ### Packer
 
 ```powershell
-cd D:\automation\packer\ubuntu26-hyperv
+cd <repo-root>\packer\ubuntu26-hyperv
 .\scripts\prepare-source-disk.ps1
+.\scripts\write-packer-vars.ps1
 .\scripts\build-nocloud-seed.ps1 -SshPublicKey (Get-Content $env:USERPROFILE\.ssh\id_ed25519.pub -Raw).Trim()
 packer init .
 packer build -force .
@@ -78,17 +79,18 @@ Image includes: containerd (systemd cgroup), kubelet/kubeadm/kubectl (held), sys
 ### Terraform
 
 ```powershell
-cd D:\automation\terraform\hyperv-k8s
+cd <repo-root>\terraform\hyperv-k8s\envs\dev
 terraform init
-terraform apply -var-file=environments\dev.tfvars
+terraform apply
 ```
 
-Writes `ansible\inventory\dev.yml` when `start_vms = true`.
+Writes `ansible\inventory\dev.yml` when `start_vms = true`. Paths resolve from the repo root by default.
 
 ### Ansible (WSL)
 
 ```bash
-cd /mnt/d/automation/ansible
+cd /mnt/<drive>/<path-to-repo>/ansible
+export ANSIBLE_CONFIG="$PWD/ansible.cfg"
 ansible-playbook -i inventory/dev.yml playbooks/site.yml
 # or stepwise:
 ansible-playbook -i inventory/dev.yml playbooks/01-site-prep.yml
@@ -102,16 +104,16 @@ ansible-playbook -i inventory/dev.yml playbooks/06-smoke-apps.yml
 ## Verification
 
 ```bash
-export KUBECONFIG=/mnt/d/automation/artifacts/kubeconfigs/cluster1.conf
+export KUBECONFIG=/mnt/<drive>/<path-to-repo>/artifacts/kubeconfigs/dev-cluster1.conf
 kubectl get nodes -o wide
 kubectl -n istio-system get pods,svc
 kubectl -n sample get pods -o wide
 
-export KUBECONFIG=/mnt/d/automation/artifacts/kubeconfigs/cluster2.conf
+export KUBECONFIG=/mnt/<drive>/<path-to-repo>/artifacts/kubeconfigs/dev-cluster2.conf
 kubectl get nodes -o wide
 
 # From cluster1 sleep → helloworld (may hit v1 local and/or v2 remote after discovery)
-export KUBECONFIG=/mnt/d/automation/artifacts/kubeconfigs/cluster1.conf
+export KUBECONFIG=/mnt/<drive>/<path-to-repo>/artifacts/kubeconfigs/dev-cluster1.conf
 SLEEP=$(kubectl -n sample get pod -l app=sleep -o jsonpath='{.items[0].metadata.name}')
 kubectl -n sample exec "$SLEEP" -- curl -sS helloworld.sample:5000/hello
 ```
@@ -121,15 +123,15 @@ Expect responses from **Hello version: v1** and eventually **v2** once endpoint 
 Other checks:
 
 ```bash
-istioctl --kubeconfig /mnt/d/automation/artifacts/kubeconfigs/cluster1.conf proxy-status
-kubectl --kubeconfig .../cluster1.conf get secrets -n istio-system | grep -i remote
+istioctl --kubeconfig /mnt/<drive>/<path-to-repo>/artifacts/kubeconfigs/dev-cluster1.conf proxy-status
+kubectl --kubeconfig .../dev-cluster1.conf get secrets -n istio-system | grep -i remote
 ```
 
 ## Artifacts
 
 | Path | Purpose |
 |------|---------|
-| `artifacts/kubeconfigs/cluster{1,2}.conf` | Admin kubeconfigs |
+| `artifacts/kubeconfigs/{env}-cluster{1,2}.conf` | Admin kubeconfigs |
 | `artifacts/certs/` | Shared root + per-cluster intermediate CAs |
 | `ansible/inventory/dev.yml` | Generated inventory |
 

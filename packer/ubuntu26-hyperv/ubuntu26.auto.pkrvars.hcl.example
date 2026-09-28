@@ -5,7 +5,8 @@
 #    .\scripts\write-packer-vars.ps1
 #    (or run ..\..\scripts\deploy-lab.ps1 which calls write-packer-vars.ps1)
 
-cloud_image_url        = "file:///D:/automation/packer/ubuntu26-hyperv/artifacts/ubuntu-26.04-server-cloudimg-amd64.vhdx"
+# Example only — write-packer-vars.ps1 rewrites these to absolute paths under this clone.
+cloud_image_url        = "file:///C:/path/to/repo/packer/ubuntu26-hyperv/artifacts/ubuntu-26.04-server-cloudimg-amd64.vhdx"
 cloud_image_checksum  = "none"
 nocloud_iso_relpath   = "artifacts/nocloud-seed.iso"
 ssh_private_key_path  = "C:/Users/YourUser/.ssh/id_ed25519"
