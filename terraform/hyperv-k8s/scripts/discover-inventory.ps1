@@ -1,5 +1,9 @@
 <#
   Discovers Hyper-V guest IPs for lab VMs and writes an Ansible inventory YAML.
+
+  Hyper-V KVP often reports a stale IP from the golden image on every clone until
+  cloud-init finishes DHCP. We only accept an address once it is unique across
+  the VM set (duplicates keep waiting).
 #>
 param(
   [Parameter(Mandatory = $true)]
@@ -18,35 +22,59 @@ $ErrorActionPreference = "Stop"
 
 function Get-GuestIpv4 {
   param([string]$Name)
-  $adapter = Get-VMNetworkAdapter -VMName $Name -ErrorAction SilentlyContinue
-  if (-not $adapter) { return $null }
-  $ips = @($adapter.IPAddresses | Where-Object {
-      $_ -match '^\d+\.\d+\.\d+\.\d+$' -and $_ -notlike '169.254.*'
-    })
-  if ($ips.Count -gt 0) { return $ips[0] }
+  $adapters = @(Get-VMNetworkAdapter -VMName $Name -ErrorAction SilentlyContinue)
+  if ($adapters.Count -eq 0) { return $null }
+  foreach ($adapter in $adapters) {
+    $ips = @($adapter.IPAddresses | Where-Object {
+        $_ -match '^\d+\.\d+\.\d+\.\d+$' -and $_ -notlike '169.254.*'
+      })
+    if ($ips.Count -gt 0) { return $ips[0] }
+  }
   return $null
 }
 
 $deadline = (Get-Date).AddSeconds($WaitSeconds)
 $resolved = @{}
-# One soft reboot for guests still without an IP after this many seconds
+# One soft reboot for guests still without a unique IP after this many seconds
 # (stuck cloud-init / networking often recovers after Restart-VM).
 $restartAfterSeconds = [Math]::Min(120, [Math]::Max(60, [int]($WaitSeconds / 3)))
 $restarted = @{}
 
-Write-Host "Waiting up to $WaitSeconds seconds for guest IPs..."
+Write-Host "Waiting up to $WaitSeconds seconds for unique guest IPs..."
 while ((Get-Date) -lt $deadline) {
+  # Fresh read every poll — do not trust earlier KVP values (golden-image ghosts).
+  $current = @{}
+  foreach ($name in $VmNames) {
+    $ip = Get-GuestIpv4 -Name $name
+    if ($ip) { $current[$name] = $ip }
+  }
+
+  $ipCounts = @{}
+  foreach ($ip in $current.Values) {
+    if (-not $ipCounts.ContainsKey($ip)) { $ipCounts[$ip] = 0 }
+    $ipCounts[$ip]++
+  }
+
+  $prevResolved = $resolved
+  $resolved = @{}
   $pending = @()
   foreach ($name in $VmNames) {
-    if ($resolved.ContainsKey($name)) { continue }
-    $ip = Get-GuestIpv4 -Name $name
-    if ($ip) {
+    if (-not $current.ContainsKey($name)) {
+      $pending += $name
+      continue
+    }
+    $ip = $current[$name]
+    if ($ipCounts[$ip] -eq 1) {
       $resolved[$name] = $ip
-      Write-Host "  $name -> $ip"
+      if (-not $prevResolved.ContainsKey($name) -or $prevResolved[$name] -ne $ip) {
+        Write-Host "  $name -> $ip"
+      }
     } else {
+      Write-Host "  $name -> $ip (shared by $($ipCounts[$ip]) VMs; waiting for unique DHCP lease)"
       $pending += $name
     }
   }
+
   if ($pending.Count -eq 0) { break }
 
   $elapsed = $WaitSeconds - ($deadline - (Get-Date)).TotalSeconds
@@ -55,7 +83,7 @@ while ((Get-Date) -lt $deadline) {
       if ($restarted.ContainsKey($name)) { continue }
       $vm = Get-VM -Name $name -ErrorAction SilentlyContinue
       if (-not $vm) { continue }
-      Write-Host "  no IP yet for $name after ${restartAfterSeconds}s; restarting VM once..."
+      Write-Host "  no unique IP yet for $name after ${restartAfterSeconds}s; restarting VM once..."
       try {
         Restart-VM -Name $name -Force -ErrorAction Stop
         $restarted[$name] = $true
@@ -71,7 +99,7 @@ while ((Get-Date) -lt $deadline) {
 
 $missing = @($VmNames | Where-Object { -not $resolved.ContainsKey($_) })
 if ($missing.Count -gt 0) {
-  throw "Timed out waiting for guest IPs: $($missing -join ', '). Ensure VMs are running and hv-kvp / guest services are available."
+  throw "Timed out waiting for unique guest IPs: $($missing -join ', '). Ensure VMs are running, hv-kvp is up, and DHCP is handing out distinct leases (not a stale golden-image IP)."
 }
 
 # Group by naming convention: <env>-<cluster>-<role>-<n>
