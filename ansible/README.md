@@ -12,7 +12,7 @@ For full Windows host setup (Hyper-V, WSL, keys, Packer/Terraform), see the [roo
 sudo apt update && sudo apt install -y ansible genisoimage openssh-client openssl curl
 ```
 
-`istioctl` is installed automatically by the Istio role into `~/.local/bin/istioctl` (pinned version in `inventory/group_vars/all.yml`).
+`istioctl` and `kubectl` are installed automatically by the Istio role into `~/.local/bin/` (versions from `inventory/group_vars/all.yml`).
 
 When using `.\scripts\deploy-lab.ps1`, the Windows SSH private key is copied to `~/.ssh/id_ed25519_lab` for you. For manual runs:
 
