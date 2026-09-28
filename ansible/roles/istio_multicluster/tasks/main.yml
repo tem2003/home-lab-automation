@@ -1,6 +1,6 @@
 ---
-# Runs against the first master of each cluster; uses local kubeconfigs + istioctl on the controller.
-# Install pinned istioctl under $HOME/.local/bin (Linux FS, no sudo). Always invoke via istioctl_bin.
+# Runs against the first master of each cluster; uses local kubeconfigs + tools on the controller.
+# Install pinned istioctl/kubectl under $HOME/.local/bin (Linux FS, no sudo).
 
 - name: Ensure local artifact directories
   ansible.builtin.file:
@@ -15,6 +15,36 @@
   delegate_to: localhost
   become: false
   run_once: true
+
+- name: Check controller kubectl
+  ansible.builtin.command: "{{ kubectl_bin }} version --client=true"
+  register: kubectl_check
+  changed_when: false
+  failed_when: false
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Install kubectl on controller when missing
+  when: kubectl_check.rc != 0
+  block:
+    - name: Resolve kubectl patch version for channel v{{ k8s_version }}
+      ansible.builtin.uri:
+        url: "https://dl.k8s.io/release/stable-{{ k8s_version }}.txt"
+        return_content: true
+      register: kubectl_stable
+      delegate_to: localhost
+      become: false
+      run_once: true
+
+    - name: Download kubectl {{ kubectl_stable.content | trim }}
+      ansible.builtin.get_url:
+        url: "https://dl.k8s.io/release/{{ kubectl_stable.content | trim }}/bin/linux/amd64/kubectl"
+        dest: "{{ kubectl_bin }}"
+        mode: "0755"
+      delegate_to: localhost
+      become: false
+      run_once: true
 
 - name: Check pinned istioctl binary
   ansible.builtin.command: "{{ istioctl_bin }} version --remote=false"

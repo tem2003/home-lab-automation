@@ -38,9 +38,10 @@ lab_istio_networks:
     cluster2: "network-stable-2"
 
 # Istio — 1.29.x officially supports Kubernetes 1.31.
-# Keep binary on the Linux filesystem (not /mnt/d) — DrvFs breaks ansible.builtin.copy atomic_move.
+# Keep binaries on the Linux filesystem (not /mnt/d) — DrvFs breaks ansible.builtin.copy atomic_move.
 istio_version: "1.29.2"
 istioctl_bin: "{{ lookup('env', 'HOME') }}/.local/bin/istioctl"
+kubectl_bin: "{{ lookup('env', 'HOME') }}/.local/bin/kubectl"
 istio_mesh_id: "mesh1"
 istio_trust_domain: "cluster.local"
 
