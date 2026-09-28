@@ -151,8 +151,8 @@ if (-not $SkipAnsible) {
   $ansibleWsl = ConvertTo-WslPath $ansibleDir
   $winKeyWsl = ConvertTo-WslPath $SshPrivateKeyPath
   $invWslRel = "inventory/$TfEnv.yml"
-  # Use LF only — CRLF makes bash treat "pipefail\r" as an invalid set -o name.
-  # Pipe to bash -s so the script is not mangled by bash -lc argument splitting.
+  # Write a UTF-8 (no BOM) LF script. Piping from PowerShell can inject a BOM or UTF-16
+  # and break bash ("﻿set: command not found") / leave cwd wrong so playbooks are missing.
   $bash = @(
     'set -euo pipefail'
     'mkdir -p "$HOME/.ssh"'
@@ -168,8 +168,16 @@ if (-not $SkipAnsible) {
     'export ANSIBLE_HOST_KEY_CHECKING=False'
     "ansible-playbook -i $invWslRel playbooks/site.yml"
   ) -join "`n"
-  $bash | & wsl.exe bash -s
-  if ($LASTEXITCODE -ne 0) { throw "ansible-playbook failed with exit $LASTEXITCODE" }
+  $bashFile = Join-Path $env:TEMP "deploy-lab-ansible-$TfEnv.sh"
+  $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+  [System.IO.File]::WriteAllText($bashFile, $bash + "`n", $utf8NoBom)
+  $bashWsl = ConvertTo-WslPath $bashFile
+  try {
+    & wsl.exe bash $bashWsl
+    if ($LASTEXITCODE -ne 0) { throw "ansible-playbook failed with exit $LASTEXITCODE" }
+  } finally {
+    Remove-Item -LiteralPath $bashFile -Force -ErrorAction SilentlyContinue
+  }
 }
 
 Write-Host ""
