@@ -1,4 +1,4 @@
-# Home lab automation (Windows + Hyper-V)
+# Home lab automation (Windows + Hyper-V, WSL, Packer, Terraform, Kubernetes, Istio, Flannel)
 
 **Platform: Windows 10/11 or Windows Server with Hyper-V enabled.**  
 This lab is built for a **Windows Hyper-V** host only — not VMware, VirtualBox, Proxmox, or cloud VMs.
