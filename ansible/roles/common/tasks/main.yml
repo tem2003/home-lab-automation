@@ -49,6 +49,36 @@
   ansible.builtin.command: sysctl --system
   changed_when: false
 
+# Fresh Ubuntu cloud images often run unattended-upgrades at first boot and hold the
+# dpkg lock; parallel Ansible apt tasks then fail on one or more nodes.
+- name: Stop unattended-upgrades during bootstrap
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: stopped
+  loop:
+    - unattended-upgrades
+    - apt-daily.service
+    - apt-daily-upgrade.service
+  failed_when: false
+
+- name: Wait until apt/dpkg locks are free
+  ansible.builtin.shell: |
+    set -euo pipefail
+    for i in $(seq 1 60); do
+      if ! fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 \
+        && ! fuser /var/lib/apt/lists/lock >/dev/null 2>&1 \
+        && ! fuser /var/lib/dpkg/lock >/dev/null 2>&1; then
+        exit 0
+      fi
+      sleep 5
+    done
+    echo "Timed out waiting for apt/dpkg locks" >&2
+    fuser -v /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock /var/lib/dpkg/lock 2>&1 || true
+    exit 1
+  args:
+    executable: /bin/bash
+  changed_when: false
+
 - name: Install base apt helpers
   ansible.builtin.apt:
     name:
@@ -66,11 +96,13 @@
       - ethtool
     state: present
     update_cache: true
+    lock_timeout: 300
 
 - name: Install containerd
   ansible.builtin.apt:
     name: containerd
     state: present
+    lock_timeout: 300
 
 - name: Ensure containerd config directory
   ansible.builtin.file:
@@ -118,6 +150,7 @@
       - kubectl
     state: present
     update_cache: true
+    lock_timeout: 300
 
 - name: Hold Kubernetes packages
   ansible.builtin.dpkg_selections:
