@@ -36,3 +36,7 @@ id_ed25519*
 .DS_Store
 Thumbs.db
 *.log
+
+# Local working notes (not shared via git)
+TODO.local.md
+*.local.md
