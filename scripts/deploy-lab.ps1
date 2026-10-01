@@ -15,6 +15,12 @@
   Run Ansible but skip Istio multi-primary and smoke apps (kubeadm + CNI only).
   Default is to install Istio (install_istio=true).
 
+.PARAMETER MasterMemoryMb
+  Hyper-V startup RAM (MB) for master VMs. Default 4096. Example: 3584 for 3.5 GiB.
+
+.PARAMETER WorkerMemoryMb
+  Hyper-V startup RAM (MB) for worker VMs. Default 4096.
+
 .PARAMETER PackerForce
   Pass -force to packer build.
 #>
@@ -25,6 +31,8 @@ param(
   [switch]$SkipIstio,
   [switch]$PackerForce,
   [string]$TfEnv = "dev",
+  [int]$MasterMemoryMb = 4096,
+  [int]$WorkerMemoryMb = 4096,
   [string]$SshPublicKeyPath = "$env:USERPROFILE\.ssh\id_ed25519.pub",
   [string]$SshPrivateKeyPath = "$env:USERPROFILE\.ssh\id_ed25519"
 )
@@ -130,9 +138,12 @@ if (-not $SkipTerraform) {
       "-var=vm_root_path=$($vmRootPath -replace '\\','/')",
       "-var=ssh_public_key_path=$($SshPublicKeyPath -replace '\\','/')",
       "-var=ssh_private_key_path=$($SshPrivateKeyPath -replace '\\','/')",
+      "-var=master_memory_mb=$MasterMemoryMb",
+      "-var=worker_memory_mb=$WorkerMemoryMb",
       "-var=start_vms=true",
       "-var=ansible_inventory_path=$($inventoryPath -replace '\\','/')"
     )
+    Write-Host "  master_memory_mb=$MasterMemoryMb  worker_memory_mb=$WorkerMemoryMb" -ForegroundColor DarkGray
     & terraform @tfArgs
     if ($LASTEXITCODE -ne 0) { throw "terraform apply failed with exit $LASTEXITCODE" }
   } finally {

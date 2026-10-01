@@ -50,6 +50,7 @@ VM names: `<env>-<cluster>-master-1`, `<env>-<cluster>-worker-N`.
 ## Notes
 
 - Golden VHDX, VM root, inventory, and SSH key paths default to this git clone (`<repo>/packer/...`, `<repo>/hyperv-k8s-vms/<env>`, `~/.ssh/id_ed25519`). Override in `terraform.tfvars` or via `deploy-lab.ps1` `-var` only if needed.
+- Node RAM defaults to 4096 MiB; override with `deploy-lab.ps1 -MasterMemoryMb` / `-WorkerMemoryMb` or `terraform -var=master_memory_mb=...`.
 - Golden VHDX is never modified; each VM gets a copy plus a NoCloud seed ISO.
 - Edit `envs/<name>/terraform.tfvars` for memory, switch name, etc.
 - After apply with `start_vms = true`, inventory is written under `ansible/inventory/<env>.yml`.
