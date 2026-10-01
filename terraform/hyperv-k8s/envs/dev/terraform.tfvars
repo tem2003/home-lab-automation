@@ -10,6 +10,7 @@ env_name = "dev"
 hyperv_switch_name = "hyper-v-switch"
 start_vms          = true
 
+# Defaults; override via deploy-lab.ps1 -MasterMemoryMb / -WorkerMemoryMb (or terraform -var).
 master_memory_mb = 4096
 worker_memory_mb = 4096
 

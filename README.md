@@ -176,4 +176,10 @@ Kubernetes only (skip Istio + smoke apps; Istio is on by default):
 .\scripts\deploy-lab.ps1 -SkipPacker -SkipTerraform -SkipIstio -TfEnv dev
 ```
 
+Custom VM memory (MB; default 4096). Example 3.5 GiB workers, 4 GiB masters:
+
+```powershell
+.\scripts\deploy-lab.ps1 -SkipPacker -TfEnv dev -MasterMemoryMb 4096 -WorkerMemoryMb 3584
+```
+
 Full docs: [`docs/multi-cluster-istio.md`](docs/multi-cluster-istio.md).
