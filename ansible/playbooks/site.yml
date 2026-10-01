@@ -13,6 +13,8 @@
 
 - name: Istio multi-primary
   import_playbook: 05-istio-multicluster.yml
+  when: install_istio | default(true) | bool
 
 - name: Smoke apps
   import_playbook: 06-smoke-apps.yml
+  when: install_istio | default(true) | bool
