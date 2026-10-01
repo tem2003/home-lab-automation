@@ -170,4 +170,10 @@ Ansible only (VMs + inventory already exist):
 .\scripts\deploy-lab.ps1 -SkipPacker -SkipTerraform -TfEnv dev
 ```
 
+Kubernetes only (skip Istio + smoke apps; Istio is on by default):
+
+```powershell
+.\scripts\deploy-lab.ps1 -SkipPacker -SkipTerraform -SkipIstio -TfEnv dev
+```
+
 Full docs: [`docs/multi-cluster-istio.md`](docs/multi-cluster-istio.md).

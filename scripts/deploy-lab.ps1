@@ -11,6 +11,10 @@
 .PARAMETER SkipAnsible
   Skip Ansible site playbook.
 
+.PARAMETER SkipIstio
+  Run Ansible but skip Istio multi-primary and smoke apps (kubeadm + CNI only).
+  Default is to install Istio (install_istio=true).
+
 .PARAMETER PackerForce
   Pass -force to packer build.
 #>
@@ -18,6 +22,7 @@ param(
   [switch]$SkipPacker,
   [switch]$SkipTerraform,
   [switch]$SkipAnsible,
+  [switch]$SkipIstio,
   [switch]$PackerForce,
   [string]$TfEnv = "dev",
   [string]$SshPublicKeyPath = "$env:USERPROFILE\.ssh\id_ed25519.pub",
@@ -166,7 +171,7 @@ if (-not $SkipAnsible) {
     'fi'
     "export ANSIBLE_CONFIG='$ansibleWsl/ansible.cfg'"
     'export ANSIBLE_HOST_KEY_CHECKING=False'
-    "ansible-playbook -i $invWslRel playbooks/site.yml"
+    "ansible-playbook -i $invWslRel playbooks/site.yml -e install_istio=$(if ($SkipIstio) { 'false' } else { 'true' })"
   ) -join "`n"
   $bashFile = Join-Path $env:TEMP "deploy-lab-ansible-$TfEnv.sh"
   $utf8NoBom = New-Object System.Text.UTF8Encoding $false

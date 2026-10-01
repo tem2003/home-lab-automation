@@ -14,6 +14,13 @@ sudo apt update && sudo apt install -y ansible genisoimage openssh-client openss
 
 `istioctl` and `kubectl` are installed automatically by the Istio role into `~/.local/bin/` (versions from `inventory/group_vars/all.yml`).
 
+Istio (and the mesh smoke apps) install by default (`install_istio: true`). To bring up Kubernetes only:
+
+```bash
+ansible-playbook -i inventory/dev.yml playbooks/site.yml -e install_istio=false
+# or: .\scripts\deploy-lab.ps1 -SkipIstio -TfEnv dev
+```
+
 When using `.\scripts\deploy-lab.ps1`, the Windows SSH private key is copied to `~/.ssh/id_ed25519_lab` for you. For manual runs:
 
 ```bash
