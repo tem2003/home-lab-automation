@@ -2,16 +2,24 @@
 # Runs against the first master of each cluster; uses local kubeconfigs + tools on the controller.
 # Install pinned istioctl/kubectl under $HOME/.local/bin (Linux FS, no sudo).
 
+# artifacts/* live on /mnt/d (DrvFs) — omit mode= (chmod EPERM under WSL).
 - name: Ensure local artifact directories
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    mode: "0755"
   loop:
     - "{{ artifacts_dir }}"
     - "{{ certs_dir }}"
     - "{{ kubeconfig_dir }}"
-    - "{{ lookup('env', 'HOME') }}/.local/bin"
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Ensure controller bin directory on Linux filesystem
+  ansible.builtin.file:
+    path: "{{ lookup('env', 'HOME') }}/.local/bin"
+    state: directory
+    mode: "0755"
   delegate_to: localhost
   become: false
   run_once: true

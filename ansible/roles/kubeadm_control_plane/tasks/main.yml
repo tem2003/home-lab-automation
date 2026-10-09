@@ -4,11 +4,11 @@
     path: /etc/kubernetes/admin.conf
   register: kubeadm_admin_conf
 
+# No mode= on /mnt/* (DrvFs): chmod → Operation not permitted under WSL.
 - name: Ensure local kubeconfig directory on controller
   ansible.builtin.file:
     path: "{{ kubeconfig_dir }}"
     state: directory
-    mode: "0755"
   delegate_to: localhost
   become: false
 
