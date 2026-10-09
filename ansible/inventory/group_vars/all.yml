@@ -6,6 +6,8 @@ k8s_version: "1.31"
 pod_subnet_bits: 24
 kubernetes_pause_image: "registry.k8s.io/pause:3.10"
 
+# On Windows+WSL these resolve under /mnt/<drive>/... (DrvFs). Do not set
+# ansible file/template mode= on those paths — chmod returns EPERM.
 artifacts_dir: "{{ playbook_dir }}/../../artifacts"
 kubeconfig_dir: "{{ artifacts_dir }}/kubeconfigs"
 certs_dir: "{{ artifacts_dir }}/certs"

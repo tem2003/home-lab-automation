@@ -26,7 +26,6 @@
   ansible.builtin.template:
     src: iop-primary.yaml.j2
     dest: "{{ artifacts_dir }}/iop-{{ cluster_name }}.yaml"
-    mode: "0644"
   delegate_to: localhost
   become: false
 
@@ -61,7 +60,6 @@
   ansible.builtin.template:
     src: eastwest-gateway.yaml.j2
     dest: "{{ artifacts_dir }}/eastwest-{{ cluster_name }}.yaml"
-    mode: "0644"
   delegate_to: localhost
   become: false
 
