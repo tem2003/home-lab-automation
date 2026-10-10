@@ -71,7 +71,7 @@ if (-not $existingVm) {
 
 Set-VM -Name $VmName `
   -MemoryStartupBytes $memoryBytes `
-  -AutomaticStartAction Nothing `
+  -AutomaticStartAction StartIfRunning `
   -AutomaticStopAction ShutDown `
   -AutomaticCheckpointsEnabled $false |
   Out-Null
