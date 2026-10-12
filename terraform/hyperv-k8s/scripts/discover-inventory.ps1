@@ -102,15 +102,22 @@ if ($missing.Count -gt 0) {
   throw "Timed out waiting for unique guest IPs: $($missing -join ', '). Ensure VMs are running, hv-kvp is up, and DHCP is handing out distinct leases (not a stale golden-image IP)."
 }
 
-# Group by naming convention: <env>-<cluster>-<role>-<n>
+# <env>-<cluster>-<role>-<n>. Env may contain hyphens; cluster/role/index are anchored at the end.
+$vmNamePattern = '^(?<env>[a-z][a-z0-9-]{0,20})-(?<cluster>cluster[12])-(?<role>master|worker)-(?<index>[1-9][0-9]*)$'
 $byCluster = @{}
+$labEnv = $null
 foreach ($name in $VmNames) {
-  $parts = $name -split "-"
-  if ($parts.Count -lt 4) {
-    throw "Unexpected VM name '$name' (expected <env>-<cluster>-<role>-<n>)"
+  if ($name -notmatch $vmNamePattern) {
+    throw "Unexpected VM name '$name' (expected <env>-<cluster>-<role>-<n>, with env matching ^[a-z][a-z0-9-]{0,20}$)."
   }
-  $cluster = $parts[1]
-  $role = $parts[2]
+  $envPart = $Matches.env
+  $cluster = $Matches.cluster
+  $role = $Matches.role
+  if ($null -eq $labEnv) {
+    $labEnv = $envPart
+  } elseif ($labEnv -ne $envPart) {
+    throw "VM '$name' environment '$envPart' does not match '$labEnv'."
+  }
   if (-not $byCluster.ContainsKey($cluster)) {
     $byCluster[$cluster] = @{ masters = @(); workers = @() }
   }
@@ -120,6 +127,10 @@ foreach ($name in $VmNames) {
   } else {
     $byCluster[$cluster].workers += $entry
   }
+}
+
+if ([string]::IsNullOrWhiteSpace($labEnv)) {
+  throw "No VM names were provided; cannot infer lab_env."
 }
 
 $outDir = Split-Path -Parent $OutputPath
@@ -132,13 +143,6 @@ $keyLine = if ($SshPrivateKeyPath) {
   "    ansible_ssh_private_key_file: ~/.ssh/id_ed25519_lab"
 } else {
   ""
-}
-
-# First path segment of VM names: dev-cluster1-master-1 → lab_env=dev
-$labEnv = (($VmNames | Select-Object -First 1) -split '-')[0]
-if ($labEnv -notmatch '^(dev|stable)$') {
-  Write-Warning "Could not infer lab_env from VM name; defaulting to 'dev'."
-  $labEnv = "dev"
 }
 
 $sb = New-Object System.Text.StringBuilder

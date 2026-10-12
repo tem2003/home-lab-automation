@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-  Power on or off all Hyper-V lab VMs for an environment (dev / stable).
+  Power on or off all Hyper-V lab VMs for one catalog environment.
 
 .PARAMETER Env
-  Environment name prefix used in VM names (default: dev).
+  Environment name from lab-environments.json. VM names start with <env>-.
 
 .PARAMETER Action
   Off = Stop-VM (graceful, then force if needed)
@@ -18,7 +18,6 @@
   .\scripts\set-lab-vms.ps1 -Env dev -Action Off -Force
 #>
 param(
-  [ValidateSet("dev", "stable")]
   [string]$Env = "dev",
 
   [Parameter(Mandatory = $true)]
@@ -29,6 +28,10 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "lib\LabCatalog.ps1")
+
+$catalog = Read-LabCatalog
+Assert-LabEnv -Name $Env -Catalog $catalog
 
 Import-Module Hyper-V -ErrorAction Stop
 

@@ -48,7 +48,8 @@ cd <repo-root>
 ## Network plan
 
 Node IPs stay on the home LAN (`192.168.50.0/24`). Pod/service CIDRs are unique
-per env+cluster so all four clusters can run together without overlay clashes.
+per env+cluster so every cluster on the LAN can run together without overlay clashes.
+Ranges live in [`lab-environments.json`](../lab-environments.json). Current catalog:
 
 | Env | Cluster | Pod CIDR | Service CIDR | Istio network |
 |-----|---------|----------|--------------|---------------|
@@ -57,7 +58,7 @@ per env+cluster so all four clusters can run together without overlay clashes.
 | stable | cluster1 | `10.246.0.0/16` | `10.98.0.0/16` | `network-stable-1` |
 | stable | cluster2 | `10.247.0.0/16` | `10.99.0.0/16` | `network-stable-2` |
 
-Inventory sets `lab_env` (`dev` / `stable`); Ansible resolves CIDRs from `group_vars/all.yml`.
+Inventory sets `lab_env` from the VM name prefix. Ansible reads that environment's CIDRs from the catalog via `group_vars/all.yml`. Add an environment with `.\scripts\new-lab-env.ps1 -Name <env>`; it allocates the next free `/16`s.
 
 East-west gateways use **NodePort** (no MetalLB). Nodes on the same Hyper-V switch must reach each other.
 
@@ -79,12 +80,13 @@ Image includes: containerd (systemd cgroup), kubelet/kubeadm/kubectl (held), sys
 ### Terraform
 
 ```powershell
-cd <repo-root>\terraform\hyperv-k8s\envs\dev
+cd <repo-root>\terraform\hyperv-k8s
 terraform init
-terraform apply
+terraform workspace select dev
+terraform apply -var=env_name=dev
 ```
 
-Writes `ansible\inventory\dev.yml` when `start_vms = true`. Paths resolve from the repo root by default.
+Writes `ansible\inventory\<env>.yml` when `start_vms = true`. Paths resolve from the repo root by default. `deploy-lab.ps1 -TfEnv <name>` selects the workspace for you.
 
 ### Ansible (WSL)
 
@@ -133,7 +135,7 @@ kubectl --kubeconfig .../dev-cluster1.conf get secrets -n istio-system | grep -i
 |------|---------|
 | `artifacts/kubeconfigs/{env}-cluster{1,2}.conf` | Admin kubeconfigs |
 | `artifacts/certs/` | Shared root + per-cluster intermediate CAs |
-| `ansible/inventory/dev.yml` | Generated inventory |
+| `ansible/inventory/<env>.yml` | Generated inventory |
 
 ## Troubleshooting
 
@@ -147,4 +149,4 @@ kubectl --kubeconfig .../dev-cluster1.conf get secrets -n istio-system | grep -i
 
 ## Non-goals (v1)
 
-HA control planes, MetalLB, staging env, full observability (Kiali/Prometheus) — add later as needed.
+HA control planes, MetalLB, a third cluster inside one environment, full observability (Kiali/Prometheus) — add later as needed.

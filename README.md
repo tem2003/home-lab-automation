@@ -133,7 +133,8 @@ Paths for the golden VHDX, VM disks, Ansible inventory, and default SSH keys are
 | Mechanism | Variables |
 |-----------|-----------|
 | [`scripts/deploy-lab.ps1`](scripts/deploy-lab.ps1) | `-SshPublicKeyPath` / `-SshPrivateKeyPath` (also passes golden/VM/inventory paths for this clone) |
-| `envs/*/terraform.tfvars` | optional overrides: `golden_vhdx_path`, `vm_root_path`, `ssh_*`, `ansible_inventory_path` |
+| [`lab-environments.json`](lab-environments.json) | environment names, VM memory, and per-cluster pod/service/Istio networks |
+| `terraform apply -var` | optional path overrides: `golden_vhdx_path`, `vm_root_path`, `ssh_*`, `ansible_inventory_path` |
 
 `deploy-lab.ps1` generates `packer/ubuntu26-hyperv/ubuntu26.auto.pkrvars.hcl` via `write-packer-vars.ps1` (SSH key + local VHDX paths) and copies the Windows private key into WSL as `~/.ssh/id_ed25519_lab` (mode `600`) for Ansible. You do not need to hand-copy the Packer `.example` vars file when using the script.
 
@@ -156,12 +157,20 @@ cd <repo-root>   # wherever you cloned this repository
 .\scripts\deploy-lab.ps1
 ```
 
-Or Terraform only (dev env — paths resolve from the repo root):
+Or Terraform only (paths resolve from the repo root; `dev` is one catalog environment):
 
 ```powershell
-cd <repo-root>\terraform\hyperv-k8s\envs\dev
+cd <repo-root>\terraform\hyperv-k8s
 terraform init
-terraform apply
+terraform workspace select dev
+terraform apply -var=env_name=dev
+```
+
+Add another environment (next free pod/service ranges), then deploy it:
+
+```powershell
+.\scripts\new-lab-env.ps1 -Name staging
+.\scripts\deploy-lab.ps1 -TfEnv staging
 ```
 
 Ansible only (VMs + inventory already exist):
@@ -176,7 +185,7 @@ Kubernetes only (skip Istio + smoke apps; Istio is on by default):
 .\scripts\deploy-lab.ps1 -SkipPacker -SkipTerraform -SkipIstio -TfEnv dev
 ```
 
-Custom VM memory (MB; default 4096). Example 3.5 GiB workers, 4 GiB masters:
+VM memory comes from [`lab-environments.json`](lab-environments.json) unless you override it. Example 3.5 GiB workers, 4 GiB masters:
 
 ```powershell
 .\scripts\deploy-lab.ps1 -SkipPacker -TfEnv dev -MasterMemoryMb 4096 -WorkerMemoryMb 3584

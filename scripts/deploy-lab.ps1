@@ -15,11 +15,14 @@
   Run Ansible but skip Istio multi-primary and smoke apps (kubeadm + CNI only).
   Default is to install Istio (install_istio=true).
 
+.PARAMETER TfEnv
+  Environment name from lab-environments.json (for example dev or stable).
+
 .PARAMETER MasterMemoryMb
-  Hyper-V startup RAM (MB) for master VMs. Default 4096. Example: 3584 for 3.5 GiB.
+  Optional Hyper-V startup RAM (MB) for master VMs. When omitted, the catalog value is used.
 
 .PARAMETER WorkerMemoryMb
-  Hyper-V startup RAM (MB) for worker VMs. Default 4096.
+  Optional Hyper-V startup RAM (MB) for worker VMs. When omitted, the catalog value is used.
 
 .PARAMETER PackerForce
   Pass -force to packer build.
@@ -31,16 +34,21 @@ param(
   [switch]$SkipIstio,
   [switch]$PackerForce,
   [string]$TfEnv = "dev",
-  [int]$MasterMemoryMb = 4096,
-  [int]$WorkerMemoryMb = 4096,
+  [Nullable[int]]$MasterMemoryMb,
+  [Nullable[int]]$WorkerMemoryMb,
   [string]$SshPublicKeyPath = "$env:USERPROFILE\.ssh\id_ed25519.pub",
   [string]$SshPrivateKeyPath = "$env:USERPROFILE\.ssh\id_ed25519"
 )
 
 $ErrorActionPreference = "Stop"
-$root = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot "lib\LabCatalog.ps1")
+$root = Get-LabRepoRoot
+$catalog = Read-LabCatalog
+Assert-LabCatalog $catalog
+Assert-LabEnv -Name $TfEnv -Catalog $catalog
+
 $packerDir = Join-Path $root "packer\ubuntu26-hyperv"
-$tfDir = Join-Path $root "terraform\hyperv-k8s\envs\$TfEnv"
+$tfDir = Join-Path $root "terraform\hyperv-k8s"
 $ansibleDir = Join-Path $root "ansible"
 $artifactsDir = Join-Path $root "artifacts"
 $goldenVhdx = Join-Path $packerDir "output-ubuntu26-hyperv\Virtual Hard Disks\ubuntu26-hyperv-packer.vhdx"
@@ -125,25 +133,36 @@ Fix (elevated PowerShell), then re-run deploy-lab.ps1:
 # --- Terraform ---
 if (-not $SkipTerraform) {
   if (-not (Test-Path $tfDir)) {
-    throw "Terraform env directory not found: $tfDir (expected envs/$TfEnv)"
+    throw "Terraform directory not found: $tfDir"
   }
   Write-Host "Applying Terraform env=$TfEnv ..." -ForegroundColor Yellow
   Push-Location $tfDir
   try {
     terraform init -input=false
+    if ($LASTEXITCODE -ne 0) { throw "terraform init failed with exit $LASTEXITCODE" }
+    Select-LabTerraformWorkspace -Name $TfEnv -Create
     $vmRootPath = Join-Path $root "hyperv-k8s-vms\$TfEnv"
     $tfArgs = @(
       "apply", "-auto-approve", "-input=false",
+      "-var=env_name=$TfEnv",
       "-var=golden_vhdx_path=$($goldenVhdx -replace '\\','/')",
       "-var=vm_root_path=$($vmRootPath -replace '\\','/')",
       "-var=ssh_public_key_path=$($SshPublicKeyPath -replace '\\','/')",
       "-var=ssh_private_key_path=$($SshPrivateKeyPath -replace '\\','/')",
-      "-var=master_memory_mb=$MasterMemoryMb",
-      "-var=worker_memory_mb=$WorkerMemoryMb",
       "-var=start_vms=true",
       "-var=ansible_inventory_path=$($inventoryPath -replace '\\','/')"
     )
-    Write-Host "  master_memory_mb=$MasterMemoryMb  worker_memory_mb=$WorkerMemoryMb" -ForegroundColor DarkGray
+    if ($null -ne $MasterMemoryMb) {
+      $tfArgs += "-var=master_memory_mb=$MasterMemoryMb"
+    }
+    if ($null -ne $WorkerMemoryMb) {
+      $tfArgs += "-var=worker_memory_mb=$WorkerMemoryMb"
+    }
+    if ($null -eq $MasterMemoryMb -and $null -eq $WorkerMemoryMb) {
+      Write-Host "  memory from lab-environments.json" -ForegroundColor DarkGray
+    } else {
+      Write-Host "  memory override master=$MasterMemoryMb worker=$WorkerMemoryMb" -ForegroundColor DarkGray
+    }
     & terraform @tfArgs
     if ($LASTEXITCODE -ne 0) { throw "terraform apply failed with exit $LASTEXITCODE" }
   } finally {

@@ -1,0 +1,53 @@
+{
+  "defaults": {
+    "hyperv_switch_name": "hyper-v-switch",
+    "master_cpu_count": 2,
+    "worker_cpu_count": 2,
+    "master_memory_mb": 4096,
+    "worker_memory_mb": 4096,
+    "clusters": {
+      "cluster1": {
+        "master_count": 1,
+        "worker_count": 2
+      },
+      "cluster2": {
+        "master_count": 1,
+        "worker_count": 2
+      }
+    }
+  },
+  "environments": {
+    "dev": {
+      "master_memory_mb": 6144,
+      "worker_memory_mb": 6144,
+      "pod_cidrs": {
+        "cluster1": "10.244.0.0/16",
+        "cluster2": "10.245.0.0/16"
+      },
+      "service_cidrs": {
+        "cluster1": "10.96.0.0/16",
+        "cluster2": "10.97.0.0/16"
+      },
+      "istio_networks": {
+        "cluster1": "network-dev-1",
+        "cluster2": "network-dev-2"
+      }
+    },
+    "stable": {
+      "master_memory_mb": 4096,
+      "worker_memory_mb": 4096,
+      "pod_cidrs": {
+        "cluster1": "10.246.0.0/16",
+        "cluster2": "10.247.0.0/16"
+      },
+      "service_cidrs": {
+        "cluster1": "10.98.0.0/16",
+        "cluster2": "10.99.0.0/16"
+      },
+      "istio_networks": {
+        "cluster1": "network-stable-1",
+        "cluster2": "network-stable-2"
+      }
+    }
+  }
+}

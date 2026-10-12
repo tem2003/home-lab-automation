@@ -7,16 +7,22 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$root = Split-Path -Parent $PSScriptRoot
-$tfDir = Join-Path $root "terraform\hyperv-k8s\envs\$TfEnv"
+. (Join-Path $PSScriptRoot "lib\LabCatalog.ps1")
 
+$catalog = Read-LabCatalog
+Assert-LabEnv -Name $TfEnv -Catalog $catalog
+
+$tfDir = Join-Path (Get-LabRepoRoot) "terraform\hyperv-k8s"
 if (-not (Test-Path $tfDir)) {
-  throw "Terraform env directory not found: $tfDir"
+  throw "Terraform directory not found: $tfDir"
 }
 
 Push-Location $tfDir
 try {
-  terraform destroy -auto-approve -input=false
+  terraform init -input=false
+  if ($LASTEXITCODE -ne 0) { throw "terraform init failed with exit $LASTEXITCODE" }
+  Select-LabTerraformWorkspace -Name $TfEnv
+  terraform destroy -auto-approve -input=false "-var=env_name=$TfEnv"
   if ($LASTEXITCODE -ne 0) { throw "terraform destroy failed with exit $LASTEXITCODE" }
 } finally {
   Pop-Location

@@ -1,30 +1,6 @@
 variable "env_name" {
-  description = "Environment name used in VM naming and paths."
+  description = "Environment key in lab-environments.json. Selects VM names, memory, and inventory path."
   type        = string
-  default     = "stable"
-}
-
-variable "clusters" {
-  description = "Cluster definitions for this environment."
-  type = map(object({
-    master_count = number
-    worker_count = number
-  }))
-  default = {
-    cluster1 = {
-      master_count = 1
-      worker_count = 2
-    }
-    cluster2 = {
-      master_count = 1
-      worker_count = 2
-    }
-  }
-}
-
-variable "hyperv_switch_name" {
-  type    = string
-  default = "hyper-v-switch"
 }
 
 variable "golden_vhdx_path" {
@@ -40,23 +16,33 @@ variable "vm_root_path" {
 }
 
 variable "master_memory_mb" {
-  type    = number
-  default = 6144
+  description = "Override catalog master VM RAM (MB). Null uses lab-environments.json."
+  type        = number
+  default     = null
 }
 
 variable "master_cpu_count" {
-  type    = number
-  default = 2
+  description = "Override catalog master vCPU count. Null uses lab-environments.json defaults."
+  type        = number
+  default     = null
 }
 
 variable "worker_memory_mb" {
-  type    = number
-  default = 6144
+  description = "Override catalog worker VM RAM (MB). Null uses lab-environments.json."
+  type        = number
+  default     = null
 }
 
 variable "worker_cpu_count" {
-  type    = number
-  default = 2
+  description = "Override catalog worker vCPU count. Null uses lab-environments.json defaults."
+  type        = number
+  default     = null
+}
+
+variable "hyperv_switch_name" {
+  description = "Override catalog Hyper-V switch name. Null uses lab-environments.json defaults."
+  type        = string
+  default     = null
 }
 
 variable "generation" {

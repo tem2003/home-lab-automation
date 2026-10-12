@@ -1,8 +1,19 @@
 locals {
-  # envs/<name> -> repo root (../../../../)
-  repo_root = abspath("${path.root}/../../../..")
+  repo_root   = abspath("${path.root}/../..")
+  scripts_dir = replace(abspath("${path.root}/scripts"), "\\", "/")
 
-  scripts_dir = abspath("${path.root}/../../scripts")
+  catalog_path = replace("${local.repo_root}/lab-environments.json", "\\", "/")
+  catalog      = jsondecode(file(local.catalog_path))
+  defaults     = local.catalog.defaults
+  env_known    = contains(keys(local.catalog.environments), var.env_name)
+  env_config   = local.env_known ? local.catalog.environments[var.env_name] : null
+
+  master_memory_mb   = coalesce(var.master_memory_mb, try(local.env_config.master_memory_mb, null), local.defaults.master_memory_mb)
+  worker_memory_mb   = coalesce(var.worker_memory_mb, try(local.env_config.worker_memory_mb, null), local.defaults.worker_memory_mb)
+  master_cpu_count   = coalesce(var.master_cpu_count, local.defaults.master_cpu_count)
+  worker_cpu_count   = coalesce(var.worker_cpu_count, local.defaults.worker_cpu_count)
+  hyperv_switch_name = coalesce(var.hyperv_switch_name, local.defaults.hyperv_switch_name)
+  clusters           = local.defaults.clusters
 
   golden_vhdx_path = (
     trimspace(var.golden_vhdx_path) != ""
@@ -38,20 +49,33 @@ locals {
   )
 }
 
+resource "terraform_data" "env_guard" {
+  lifecycle {
+    precondition {
+      condition     = local.env_known
+      error_message = "env_name \"${var.env_name}\" is not in lab-environments.json. Add it with scripts/new-lab-env.ps1."
+    }
+    precondition {
+      condition     = terraform.workspace == var.env_name
+      error_message = "Terraform workspace \"${terraform.workspace}\" does not match env_name \"${var.env_name}\". Run: terraform workspace select ${var.env_name}"
+    }
+  }
+}
+
 module "env" {
-  source = "../../modules/env"
+  source = "./modules/env"
 
   env_name           = var.env_name
-  clusters           = var.clusters
-  hyperv_switch_name = var.hyperv_switch_name
+  clusters           = local.clusters
+  hyperv_switch_name = local.hyperv_switch_name
   golden_vhdx_path   = local.golden_vhdx_path
   vm_root_path       = local.vm_root_path
   scripts_dir        = local.scripts_dir
 
-  master_memory_mb = var.master_memory_mb
-  master_cpu_count = var.master_cpu_count
-  worker_memory_mb = var.worker_memory_mb
-  worker_cpu_count = var.worker_cpu_count
+  master_memory_mb = local.master_memory_mb
+  master_cpu_count = local.master_cpu_count
+  worker_memory_mb = local.worker_memory_mb
+  worker_cpu_count = local.worker_cpu_count
 
   generation          = var.generation
   start_vms           = var.start_vms
