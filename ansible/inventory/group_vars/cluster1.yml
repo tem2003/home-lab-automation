@@ -1,8 +1,8 @@
 ---
 cluster_name: cluster1
 cluster_group: cluster1
-pod_network_cidr: "{{ lab_pod_cidrs[lab_env][cluster_name] }}"
-service_cidr: "{{ lab_service_cidrs[lab_env][cluster_name] }}"
+pod_network_cidr: "{{ lab_environments[lab_env].pod_cidrs[cluster_name] }}"
+service_cidr: "{{ lab_environments[lab_env].service_cidrs[cluster_name] }}"
 istio_cluster_name: cluster1
-istio_network: "{{ lab_istio_networks[lab_env][cluster_name] }}"
+istio_network: "{{ lab_environments[lab_env].istio_networks[cluster_name] }}"
 kubeconfig_local_path: "{{ kubeconfig_dir }}/{{ lab_env }}-cluster1.conf"
